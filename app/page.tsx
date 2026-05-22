@@ -1,0 +1,180 @@
+import { submitOrder } from "./actions";
+import { listLiveEvents } from "@/lib/liveEvents";
+import { makeEmptyEquipment, makeEmptyMembers, makeEmptySongs } from "@/lib/orderSchema";
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const params = await searchParams;
+  const liveEvents = await listLiveEvents();
+  const members = makeEmptyMembers();
+  const songs = makeEmptySongs();
+  const equipment = makeEmptyEquipment();
+
+  return (
+    <main className="shell">
+      <header className="topbar">
+        <div className="brand">
+          <strong>PAオーダーシート</strong>
+          <span>提出フォーム</span>
+        </div>
+      </header>
+
+      <form className="container" action={submitOrder}>
+        <section className="hero">
+          <h1>PAオーダーシート提出</h1>
+          <p>
+            バンド情報、メンバー、セットリスト、曲ごとのPA要望をまとめて提出できます。
+          </p>
+        </section>
+
+        {params.error ? <div className="error">{params.error}</div> : null}
+
+        <section className="section">
+          <div className="section-title">
+            <div>
+              <h2>基本情報</h2>
+              <p>管理者がバンドごとに確認するための情報です。</p>
+            </div>
+          </div>
+          <div className="grid two">
+            <label className="field">
+              <span>ライブ内容</span>
+              <select className="select" name="live_event_id" required>
+                <option value="">選択してください</option>
+                {liveEvents.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <input name="live_event_name" type="hidden" value="" />
+            <label className="field">
+              <span>バンド名</span>
+              <input className="input" name="band_name" required />
+            </label>
+            <label className="field">
+              <span>代表者名</span>
+              <input className="input" name="contact_name" required />
+            </label>
+            <label className="field">
+              <span>使用するマイクの本数</span>
+              <input className="input" name="microphone_count" min="0" type="number" />
+            </label>
+            <label className="check">
+              <input name="uses_backing_track" type="checkbox" />
+              <span>音源・同期音源を使用する</span>
+            </label>
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="section-title">
+            <div>
+              <h2>メンバー</h2>
+              <p>名前と担当楽器を入力してください。</p>
+            </div>
+          </div>
+          <div className="grid two">
+            {members.map((member, index) => (
+              <div className="mini-row" key={member.id}>
+                <label className="field">
+                  <span>名前 {index + 1}</span>
+                  <input className="input" name={`member_${index}_name`} />
+                </label>
+                <label className="field">
+                  <span>担当楽器</span>
+                  <input className="input" name={`member_${index}_instrument`} placeholder="Vo / Gt / Ba / Dr" />
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="section-title">
+            <div>
+              <h2>セットリスト</h2>
+              <p>曲ごとのきっかけ、曲調、PA要望、MCを入力できます。</p>
+            </div>
+          </div>
+          <div className="grid">
+            {songs.map((song, index) => (
+              <div className="song-grid" key={song.id}>
+                <div className="song-head">
+                  <strong>{index + 1}曲目</strong>
+                  <label className="check">
+                    <input name={`song_${index}_has_mc`} type="checkbox" />
+                    <span>この曲の後にMCあり</span>
+                  </label>
+                </div>
+                <div className="grid three">
+                  <label className="field">
+                    <span>曲名</span>
+                    <input className="input" name={`song_${index}_title`} />
+                  </label>
+                  <label className="field">
+                    <span>時間</span>
+                    <input className="input" name={`song_${index}_duration`} placeholder="4:30" />
+                  </label>
+                  <label className="field">
+                    <span>曲調</span>
+                    <input className="input" name={`song_${index}_mood`} placeholder="バラード / ロック" />
+                  </label>
+                </div>
+                <div className="grid two">
+                  <label className="field">
+                    <span>曲の始まるきっかけ</span>
+                    <input className="input" name={`song_${index}_start_trigger`} placeholder="ドラム4カウント / ギターから" />
+                  </label>
+                  <label className="field">
+                    <span>MC担当</span>
+                    <input className="input" name={`song_${index}_mc_person`} placeholder="Vo など" />
+                  </label>
+                </div>
+                <label className="field">
+                  <span>音響への要望</span>
+                  <textarea className="textarea" name={`song_${index}_pa_request`} />
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="section-title">
+            <div>
+              <h2>持ち込み機材</h2>
+              <p>マルチエフェクター、スネア、シンバルなどを入力してください。</p>
+            </div>
+          </div>
+          <div className="grid two">
+            {equipment.map((item, index) => (
+              <div className="mini-row" key={item.id}>
+                <label className="field">
+                  <span>機材 {index + 1}</span>
+                  <input className="input" name={`equipment_${index}_name`} />
+                </label>
+                <label className="field">
+                  <span>担当楽器</span>
+                  <input className="input" name={`equipment_${index}_instrument`} />
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="section">
+          <label className="field">
+            <span>バンド全体・全曲通しての要望</span>
+            <textarea className="textarea" name="general_request" />
+          </label>
+          <div className="actions">
+            <button className="button" type="submit">
+              提出する
+            </button>
+          </div>
+        </section>
+      </form>
+    </main>
+  );
+}
