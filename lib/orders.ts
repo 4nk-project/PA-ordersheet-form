@@ -37,6 +37,7 @@ export async function listOrderSummaries(): Promise<OrderSummary[]> {
     id: order.id,
     liveEventId: order.liveEventId,
     liveEventName: order.liveEventName,
+    liveEventSongCount: order.liveEventSongCount ?? order.songs.length,
     bandName: order.bandName,
     contactName: order.contactName,
     songCount: order.songs.length,

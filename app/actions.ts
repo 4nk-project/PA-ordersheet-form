@@ -2,16 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createLiveEvent, deleteLiveEvent, getLiveEvent } from "@/lib/liveEvents";
+import { createLiveEvent, deleteLiveEvent, getLiveEvent, updateLiveEventSongCount } from "@/lib/liveEvents";
 import { createOrder, deleteOrder, updateOrderStatus } from "@/lib/orders";
 import { orderFromFormData, validateOrder } from "@/lib/orderSchema";
 import type { OrderStatus } from "@/types/order";
 
 export async function submitOrder(formData: FormData) {
-  const order = orderFromFormData(formData);
-  const liveEvent = await getLiveEvent(order.liveEventId);
+  const liveEventId = String(formData.get("live_event_id") || "");
+  const liveEvent = await getLiveEvent(liveEventId);
+  const order = orderFromFormData(formData, liveEvent?.songCount);
   if (liveEvent) {
     order.liveEventName = liveEvent.name;
+    order.liveEventSongCount = liveEvent.songCount;
   }
 
   const errors = validateOrder(order);
@@ -47,9 +49,20 @@ export async function removeOrder(formData: FormData) {
 
 export async function addLiveEvent(formData: FormData) {
   const name = String(formData.get("name") || "");
-  await createLiveEvent(name);
+  const songCount = Number(formData.get("song_count") || 0);
+  await createLiveEvent(name, songCount);
   revalidatePath("/");
   revalidatePath("/admin");
+}
+
+export async function changeLiveEventSongCount(formData: FormData) {
+  const id = String(formData.get("id") || "");
+  const songCount = Number(formData.get("song_count") || 0);
+  if (id) {
+    await updateLiveEventSongCount(id, songCount);
+    revalidatePath("/");
+    revalidatePath("/admin");
+  }
 }
 
 export async function removeLiveEvent(formData: FormData) {

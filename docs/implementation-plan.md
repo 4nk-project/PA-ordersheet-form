@@ -8,6 +8,7 @@
 
 - 提出者向けフォーム
   - ライブ内容の選択
+  - 選択したライブに応じた曲数分のセットリスト入力
   - バンド基本情報
   - メンバーと担当楽器
   - セットリスト
@@ -22,6 +23,7 @@
   - `/admin` 以下をmiddlewareで保護
 - 管理画面
   - ライブ内容の追加・削除
+  - ライブごとの曲数指定
   - バンド別提出一覧
   - 未確認、確認中、完了のステータス管理
   - バンド詳細
@@ -46,6 +48,7 @@
 create table live_events (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  song_count integer not null default 8,
   created_at timestamptz default now()
 );
 
@@ -53,6 +56,7 @@ create table orders (
   id uuid primary key default gen_random_uuid(),
   live_event_id uuid references live_events(id),
   live_event_name text,
+  live_event_song_count integer not null default 8,
   band_name text not null,
   contact_name text not null,
   microphone_count integer default 0,

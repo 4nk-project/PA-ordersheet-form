@@ -1,4 +1,4 @@
-import { addLiveEvent, removeLiveEvent } from "@/app/actions";
+import { addLiveEvent, changeLiveEventSongCount, removeLiveEvent } from "@/app/actions";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { listOrderSummaries } from "@/lib/orders";
 import { formatDateTime, statusLabels } from "@/lib/format";
@@ -66,6 +66,10 @@ export default async function AdminPage() {
                 <span>追加するライブ名</span>
                 <input className="input" name="name" placeholder="例: 2026 春ライブ" required />
               </label>
+              <label className="field">
+                <span>曲数</span>
+                <input className="input" defaultValue={8} min="1" name="song_count" required type="number" />
+              </label>
               <button className="button" type="submit">
                 追加
               </button>
@@ -75,6 +79,7 @@ export default async function AdminPage() {
                 <thead>
                   <tr>
                     <th>ライブ名</th>
+                    <th>曲数</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -82,6 +87,15 @@ export default async function AdminPage() {
                   {liveEvents.map((event) => (
                     <tr key={event.id}>
                       <td>{event.name}</td>
+                      <td>
+                        <form className="inline-form" action={changeLiveEventSongCount}>
+                          <input name="id" type="hidden" value={event.id} />
+                          <input className="input compact-input" defaultValue={event.songCount} min="1" name="song_count" type="number" />
+                          <button className="button secondary" type="submit">
+                            更新
+                          </button>
+                        </form>
+                      </td>
                       <td>
                         <form action={removeLiveEvent}>
                           <input name="id" type="hidden" value={event.id} />
@@ -124,7 +138,7 @@ export default async function AdminPage() {
                         <strong>{order.bandName}</strong>
                       </td>
                       <td>{order.contactName}</td>
-                      <td>{order.songCount}曲</td>
+                      <td>{order.songCount} / {order.liveEventSongCount || order.songCount}曲</td>
                       <td>{order.usesBackingTrack ? "あり" : "なし"}</td>
                       <td>
                         <span className={`badge ${order.status === "new" ? "warn" : order.status === "done" ? "done" : ""}`}>

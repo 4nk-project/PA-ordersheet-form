@@ -386,6 +386,16 @@ button {
   gap: 14px;
 }
 
+.inline-form {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.compact-input {
+  max-width: 96px;
+}
+
 .danger-zone {
   align-items: center;
   background: #fff5f3;

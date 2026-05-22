@@ -29,6 +29,7 @@ export type Equipment = {
 export type LiveEvent = {
   id: string;
   name: string;
+  songCount: number;
   createdAt: string;
 };
 
@@ -36,6 +37,7 @@ export type PAOrder = {
   id: string;
   liveEventId: string;
   liveEventName: string;
+  liveEventSongCount: number;
   bandName: string;
   contactName: string;
   microphoneCount: number;
@@ -53,6 +55,7 @@ export type OrderSummary = {
   id: string;
   liveEventId: string;
   liveEventName: string;
+  liveEventSongCount: number;
   bandName: string;
   contactName: string;
   songCount: number;

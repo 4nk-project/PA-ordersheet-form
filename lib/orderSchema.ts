@@ -86,7 +86,7 @@ function bool(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
-export function orderFromFormData(formData: FormData): PAOrder {
+export function orderFromFormData(formData: FormData, songCount = DEFAULT_SONG_COUNT): PAOrder {
   const now = new Date().toISOString();
   const members = compactMembers(
     makeEmptyMembers().map((member, index) => ({
@@ -96,7 +96,7 @@ export function orderFromFormData(formData: FormData): PAOrder {
     })),
   );
   const songs = compactSongs(
-    makeEmptySongs().map((song, index) => ({
+    makeEmptySongs(songCount).map((song, index) => ({
       ...song,
       title: text(formData, `song_${index}_title`),
       duration: text(formData, `song_${index}_duration`),
@@ -121,6 +121,7 @@ export function orderFromFormData(formData: FormData): PAOrder {
     id: makeId(),
     liveEventId: text(formData, "live_event_id"),
     liveEventName: text(formData, "live_event_name"),
+    liveEventSongCount: songCount,
     bandName: text(formData, "band_name"),
     contactName: text(formData, "contact_name"),
     microphoneCount: Number(text(formData, "microphone_count") || 0),
