@@ -1,6 +1,8 @@
 import { listLiveEvents } from "@/lib/liveEvents";
 import { OrderForm } from "./order-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
   const liveEvents = await listLiveEvents();

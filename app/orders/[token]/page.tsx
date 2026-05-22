@@ -3,6 +3,8 @@ import { listLiveEvents } from "@/lib/liveEvents";
 import { getOrderByEditToken } from "@/lib/orders";
 import { OrderForm } from "@/app/order-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditOrderPage({
   params,
   searchParams,

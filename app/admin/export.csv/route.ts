@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { listOrders } from "@/lib/orders";
 import { statusLabels } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 function csv(value: string | number | boolean) {
   const text = String(value);
   return `"${text.replaceAll('"', '""')}"`;

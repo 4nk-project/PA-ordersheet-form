@@ -4,6 +4,8 @@ import { listOrderSummaries } from "@/lib/orders";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { logout } from "./login/actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const liveEvents = await listLiveEvents();
   const orders = await listOrderSummaries();
