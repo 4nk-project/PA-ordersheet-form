@@ -6,3 +6,11 @@ data/live-events.json
 .env.local
 npm-debug.log*
 tsconfig.tsbuildinfo
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
