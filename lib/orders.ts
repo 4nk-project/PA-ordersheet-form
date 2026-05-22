@@ -35,6 +35,7 @@ export async function listOrderSummaries(): Promise<OrderSummary[]> {
   const orders = await readOrders();
   return orders.map((order) => ({
     id: order.id,
+    editToken: order.editToken,
     liveEventId: order.liveEventId,
     liveEventName: order.liveEventName,
     liveEventSongCount: order.liveEventSongCount ?? order.songs.length,
@@ -50,6 +51,32 @@ export async function listOrderSummaries(): Promise<OrderSummary[]> {
 export async function getOrder(id: string) {
   const orders = await readOrders();
   return orders.find((order) => order.id === id) ?? null;
+}
+
+export async function getOrderByEditToken(editToken: string) {
+  const orders = await readOrders();
+  return orders.find((order) => order.editToken === editToken) ?? null;
+}
+
+export async function updateOrderByEditToken(editToken: string, nextOrder: PAOrder) {
+  const orders = await readOrders();
+  let updatedOrder: PAOrder | null = null;
+  const nextOrders = orders.map((order) => {
+    if (order.editToken !== editToken) return order;
+
+    updatedOrder = {
+      ...nextOrder,
+      id: order.id,
+      editToken: order.editToken,
+      status: order.status,
+      createdAt: order.createdAt,
+      updatedAt: new Date().toISOString(),
+    };
+    return updatedOrder;
+  });
+
+  await writeOrders(nextOrders);
+  return updatedOrder;
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

@@ -8,6 +8,13 @@ export function makeId(prefix = "ord") {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+export function makeEditToken() {
+  if (globalThis.crypto?.randomUUID) {
+    return `edit_${globalThis.crypto.randomUUID().replaceAll("-", "")}`;
+  }
+  return `${makeId("edit")}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
 export function makeEmptyMembers(count = DEFAULT_MEMBER_COUNT): Member[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `member-${index + 1}`,
@@ -119,6 +126,7 @@ export function orderFromFormData(formData: FormData, songCount = DEFAULT_SONG_C
 
   return {
     id: makeId(),
+    editToken: makeEditToken(),
     liveEventId: text(formData, "live_event_id"),
     liveEventName: text(formData, "live_event_name"),
     liveEventSongCount: songCount,

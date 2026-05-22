@@ -18,6 +18,9 @@
   - 音源使用
   - 持ち込み機材
   - バンド全体要望
+- 提出者向け確認・編集
+  - 提出完了後に確認・編集用URLを発行
+  - `/orders/[token]` から自分の提出内容を確認・更新
 - 管理者ログイン
   - `ADMIN_PASSWORD` による簡易認証
   - `/admin` 以下をmiddlewareで保護
@@ -54,6 +57,7 @@ create table live_events (
 
 create table orders (
   id uuid primary key default gen_random_uuid(),
+  edit_token text not null unique,
   live_event_id uuid references live_events(id),
   live_event_name text,
   live_event_song_count integer not null default 8,

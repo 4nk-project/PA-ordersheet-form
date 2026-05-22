@@ -35,6 +35,7 @@ export type LiveEvent = {
 
 export type PAOrder = {
   id: string;
+  editToken: string;
   liveEventId: string;
   liveEventName: string;
   liveEventSongCount: number;
@@ -53,6 +54,7 @@ export type PAOrder = {
 
 export type OrderSummary = {
   id: string;
+  editToken?: string;
   liveEventId: string;
   liveEventName: string;
   liveEventSongCount: number;
