@@ -9,8 +9,14 @@ const statuses: OrderStatus[] = ["new", "reviewing", "done"];
 
 export const dynamic = "force-dynamic";
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ updated?: string }>;
+}) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const order = await getOrder(id);
 
   if (!order) {
@@ -36,12 +42,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </header>
       <section className="container">
+        {query.updated === "1" ? <div className="success">提出内容を更新しました。</div> : null}
         <div className="detail-header">
           <div className="hero">
             <h1>{order.bandName}</h1>
             <p>
               提出日時: {formatDateTime(order.createdAt)} / 代表者: {order.contactName}
             </p>
+            <div className="actions">
+              <a className="button secondary" href={`/admin/orders/${order.id}/edit`}>
+                提出内容を編集
+              </a>
+            </div>
           </div>
           <form className="actions" action={changeStatus}>
             <input name="id" type="hidden" value={order.id} />

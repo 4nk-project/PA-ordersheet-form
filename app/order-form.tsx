@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { submitOrder, updateSubmittedOrder } from "./actions";
+import { submitOrder, updateAdminOrder, updateSubmittedOrder } from "./actions";
 import {
   DEFAULT_EQUIPMENT_COUNT,
   DEFAULT_MEMBER_COUNT,
@@ -15,29 +15,40 @@ import type { LiveEvent, PAOrder } from "@/types/order";
 export function OrderForm({
   error,
   liveEvents,
+  mode = "new",
   order,
   updated,
 }: {
   error?: string;
   liveEvents: LiveEvent[];
+  mode?: "new" | "submitter" | "admin";
   order?: PAOrder;
   updated?: boolean;
 }) {
   const [selectedLiveEventId, setSelectedLiveEventId] = useState(order?.liveEventId || "");
   const selectedLiveEvent = liveEvents.find((event) => event.id === selectedLiveEventId);
   const songCount = selectedLiveEvent?.songCount ?? order?.liveEventSongCount ?? DEFAULT_SONG_COUNT;
-  const action = order ? updateSubmittedOrder : submitOrder;
+  const action = mode === "admin" ? updateAdminOrder : order ? updateSubmittedOrder : submitOrder;
 
   const members = useMemo(() => makeEmptyMembers(DEFAULT_MEMBER_COUNT), []);
   const songs = useMemo(() => makeEmptySongs(songCount), [songCount]);
   const equipment = useMemo(() => makeEmptyEquipment(DEFAULT_EQUIPMENT_COUNT), []);
 
   return (
-    <form className="container" action={action}>
-      {order ? <input name="edit_token" type="hidden" value={order.editToken} /> : null}
+    <form
+      className="container"
+      action={action}
+      onSubmit={(event) => {
+        if (mode === "admin" && !window.confirm("提出内容を変更します。本当に保存しますか？")) {
+          event.preventDefault();
+        }
+      }}
+    >
+      {order && mode !== "admin" ? <input name="edit_token" type="hidden" value={order.editToken} /> : null}
+      {order && mode === "admin" ? <input name="order_id" type="hidden" value={order.id} /> : null}
       <section className="hero">
-        <h1>{order ? "PAオーダーシート確認・編集" : "PAオーダーシート提出"}</h1>
-        <p>{order ? "提出済みの内容を確認し、必要な箇所を編集できます。" : "バンド情報、メンバー、セットリスト、曲ごとのPA要望をまとめて提出できます。"}</p>
+        <h1>{mode === "admin" ? "提出内容の管理者編集" : order ? "PAオーダーシート確認・編集" : "PAオーダーシート提出"}</h1>
+        <p>{mode === "admin" ? "管理者として提出済みの内容を編集できます。" : order ? "提出済みの内容を確認し、必要な箇所を編集できます。" : "バンド情報、メンバー、セットリスト、曲ごとのPA要望をまとめて提出できます。"}</p>
       </section>
 
       {error ? <div className="error">{error}</div> : null}
@@ -193,7 +204,11 @@ export function OrderForm({
           <button className="button" type="submit">
             {order ? "更新する" : "提出する"}
           </button>
-          {order ? (
+          {mode === "admin" && order ? (
+            <a className="button secondary" href={`/admin/orders/${order.id}`}>
+              詳細へ戻る
+            </a>
+          ) : order ? (
             <a className="button secondary" href="/">
               新しく提出する
             </a>

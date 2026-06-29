@@ -321,6 +321,28 @@ export async function updateOrderByEditToken(editToken: string, nextOrder: PAOrd
   return getOrder(updatedOrder.id);
 }
 
+export async function updateOrderById(id: string, nextOrder: PAOrder) {
+  const existingOrder = await getOrder(id);
+  if (!existingOrder) return null;
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .update(orderUpdate(nextOrder))
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update order: ${error.message}`);
+  }
+
+  const updatedOrder = data as OrderRow;
+  await replaceRelatedRows(updatedOrder.id, nextOrder);
+
+  return getOrder(updatedOrder.id);
+}
+
 export async function updateOrderStatus(id: string, status: OrderStatus) {
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("orders").update({ status, updated_at: new Date().toISOString() }).eq("id", id);

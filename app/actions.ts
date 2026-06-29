@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createLiveEvent, deleteLiveEvent, getLiveEvent, updateLiveEventSongCount } from "@/lib/liveEvents";
-import { createOrder, deleteOrder, getOrderByEditToken, updateOrderByEditToken, updateOrderStatus } from "@/lib/orders";
+import { createOrder, deleteOrder, getOrder, getOrderByEditToken, updateOrderByEditToken, updateOrderById, updateOrderStatus } from "@/lib/orders";
 import { orderFromFormData, validateOrder } from "@/lib/orderSchema";
 import type { OrderStatus } from "@/types/order";
 
@@ -53,6 +53,35 @@ export async function updateSubmittedOrder(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath(`/orders/${editToken}`);
   redirect(`/orders/${encodeURIComponent(editToken)}?updated=1`);
+}
+
+export async function updateAdminOrder(formData: FormData) {
+  const id = String(formData.get("order_id") || "");
+  const existingOrder = await getOrder(id);
+
+  if (!id || !existingOrder) {
+    redirect("/admin");
+  }
+
+  const liveEventId = String(formData.get("live_event_id") || "");
+  const liveEvent = await getLiveEvent(liveEventId);
+  const order = orderFromFormData(formData, liveEvent?.songCount);
+  if (liveEvent) {
+    order.liveEventName = liveEvent.name;
+    order.liveEventSongCount = liveEvent.songCount;
+  }
+
+  const errors = validateOrder(order);
+
+  if (errors.length > 0) {
+    redirect(`/admin/orders/${encodeURIComponent(id)}/edit?error=${encodeURIComponent(errors.join(" "))}`);
+  }
+
+  await updateOrderById(id, order);
+  revalidatePath("/admin");
+  revalidatePath(`/admin/orders/${id}`);
+  revalidatePath(`/admin/orders/${id}/edit`);
+  redirect(`/admin/orders/${encodeURIComponent(id)}?updated=1`);
 }
 
 export async function changeStatus(formData: FormData) {

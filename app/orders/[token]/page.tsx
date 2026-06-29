@@ -27,7 +27,7 @@ export default async function EditOrderPage({
           <span>確認・編集</span>
         </div>
       </header>
-      <OrderForm error={query.error} liveEvents={liveEvents} order={order} updated={query.updated === "1"} />
+      <OrderForm error={query.error} liveEvents={liveEvents} mode="submitter" order={order} updated={query.updated === "1"} />
     </main>
   );
 }
