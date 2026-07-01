@@ -5,7 +5,6 @@ import { submitOrder, updateAdminOrder, updateSubmittedOrder } from "./actions";
 import {
   DEFAULT_EQUIPMENT_COUNT,
   DEFAULT_MEMBER_COUNT,
-  DEFAULT_SONG_COUNT,
   makeEmptyEquipment,
   makeEmptyMembers,
   makeEmptySongs,
@@ -27,7 +26,7 @@ export function OrderForm({
 }) {
   const [selectedLiveEventId, setSelectedLiveEventId] = useState(order?.liveEventId || "");
   const selectedLiveEvent = liveEvents.find((event) => event.id === selectedLiveEventId);
-  const songCount = selectedLiveEvent?.songCount ?? order?.liveEventSongCount ?? DEFAULT_SONG_COUNT;
+  const songCount = selectedLiveEvent?.songCount ?? order?.liveEventSongCount ?? 1;
   const action = mode === "admin" ? updateAdminOrder : order ? updateSubmittedOrder : submitOrder;
   const textInputProps = { autoComplete: "new-password", spellCheck: false } as const;
   const textareaProps = { autoComplete: "off", spellCheck: false } as const;
@@ -35,6 +34,7 @@ export function OrderForm({
   const members = useMemo(() => makeEmptyMembers(DEFAULT_MEMBER_COUNT), []);
   const songs = useMemo(() => makeEmptySongs(songCount), [songCount]);
   const equipment = useMemo(() => makeEmptyEquipment(DEFAULT_EQUIPMENT_COUNT), []);
+  const requiredMark = <span className="required">必須</span>;
 
   return (
     <form
@@ -66,16 +66,17 @@ export function OrderForm({
       {error ? <div className="error">{error}</div> : null}
       {updated ? <div className="success">更新しました。</div> : null}
 
-      <section className="section">
+      <section className="section section-card">
         <div className="section-title">
           <div>
             <h2>基本情報</h2>
             <p>管理者がバンドごとに確認するための情報です。</p>
           </div>
+          <span className="section-status">最初に入力</span>
         </div>
         <div className="grid two">
           <label className="field">
-            <span>ライブ内容</span>
+            <span>ライブ内容 {requiredMark}</span>
             <select
               className="select"
               name="live_event_id"
@@ -93,11 +94,11 @@ export function OrderForm({
           </label>
           <input name="live_event_name" type="hidden" value={selectedLiveEvent?.name || ""} />
           <label className="field">
-            <span>バンド名</span>
+            <span>バンド名 {requiredMark}</span>
             <input className="input" defaultValue={order?.bandName || ""} name="band_name" required {...textInputProps} />
           </label>
           <label className="field">
-            <span>代表者名</span>
+            <span>代表者名 {requiredMark}</span>
             <input className="input" defaultValue={order?.contactName || ""} name="contact_name" required {...textInputProps} />
           </label>
           <label className="field">
@@ -111,14 +112,14 @@ export function OrderForm({
         </div>
       </section>
 
-      <section className="section">
-        <div className="section-title">
-          <div>
-            <h2>メンバー</h2>
-            <p>名前と担当楽器を入力してください。</p>
-          </div>
-        </div>
-        <div className="grid two">
+      <details className="section collapsible" open>
+        <summary>
+          <span>
+            <strong>メンバー</strong>
+            <small>名前と担当楽器を入力してください。</small>
+          </span>
+        </summary>
+        <div className="grid two collapsible-body">
           {members.map((member, index) => (
             <div className="mini-row" key={member.id}>
               <label className="field">
@@ -132,66 +133,72 @@ export function OrderForm({
             </div>
           ))}
         </div>
-      </section>
+      </details>
 
-      <section className="section">
-        <div className="section-title">
-          <div>
-            <h2>セットリスト</h2>
-            <p>{selectedLiveEvent ? `${selectedLiveEvent.name}は${songCount}曲まで入力できます。` : "ライブ内容を選択すると曲数が反映されます。"}</p>
-          </div>
-        </div>
-        <div className="grid">
+      <details className="section collapsible" open>
+        <summary>
+          <span>
+            <strong>セットリスト</strong>
+            <small>{selectedLiveEvent ? `${selectedLiveEvent.name}は${songCount}曲まで入力できます。` : "ライブ内容を選択すると曲数が反映されます。"}</small>
+          </span>
+        </summary>
+        <div className="grid collapsible-body">
           {songs.map((song, index) => (
-            <div className="song-grid" key={song.id}>
-              <div className="song-head">
-                <strong>{index + 1}曲目</strong>
+            <details className="song-grid" key={song.id} open={index === 0 || Boolean(order?.songs[index]?.title)}>
+              <summary className="song-head">
+                <span>
+                  <strong>{index + 1}曲目</strong>
+                  {index === 0 ? requiredMark : null}
+                </span>
+                <span className="song-summary">{order?.songs[index]?.title || "曲情報を入力"}</span>
+              </summary>
+              <div className="song-body">
                 <label className="check">
                   <input defaultChecked={order?.songs[index]?.mc.hasMc || false} name={`song_${index}_has_mc`} type="checkbox" />
                   <span>この曲の後にMCあり</span>
                 </label>
+                <div className="grid three">
+                  <label className="field">
+                    <span>曲名 {index === 0 ? requiredMark : null}</span>
+                    <input className="input" defaultValue={order?.songs[index]?.title || ""} name={`song_${index}_title`} required={index === 0} {...textInputProps} />
+                  </label>
+                  <label className="field">
+                    <span>時間</span>
+                    <input className="input" defaultValue={order?.songs[index]?.duration || ""} name={`song_${index}_duration`} placeholder="4:30" {...textInputProps} />
+                  </label>
+                  <label className="field">
+                    <span>曲調</span>
+                    <input className="input" defaultValue={order?.songs[index]?.mood || ""} name={`song_${index}_mood`} placeholder="バラード / ロック" {...textInputProps} />
+                  </label>
+                </div>
+                <div className="grid two">
+                  <label className="field">
+                    <span>曲の始まるきっかけ</span>
+                    <input className="input" defaultValue={order?.songs[index]?.startTrigger || ""} name={`song_${index}_start_trigger`} placeholder="ドラム4カウント / ギターから" {...textInputProps} />
+                  </label>
+                  <label className="field">
+                    <span>MC担当</span>
+                    <input className="input" defaultValue={order?.songs[index]?.mc.person || ""} name={`song_${index}_mc_person`} placeholder="Vo など" {...textInputProps} />
+                  </label>
+                </div>
+                <label className="field">
+                  <span>音響への要望</span>
+                  <textarea className="textarea" defaultValue={order?.songs[index]?.paRequest || ""} name={`song_${index}_pa_request`} {...textareaProps} />
+                </label>
               </div>
-              <div className="grid three">
-                <label className="field">
-                  <span>曲名</span>
-                  <input className="input" defaultValue={order?.songs[index]?.title || ""} name={`song_${index}_title`} required={index === 0} {...textInputProps} />
-                </label>
-                <label className="field">
-                  <span>時間</span>
-                  <input className="input" defaultValue={order?.songs[index]?.duration || ""} name={`song_${index}_duration`} placeholder="4:30" {...textInputProps} />
-                </label>
-                <label className="field">
-                  <span>曲調</span>
-                  <input className="input" defaultValue={order?.songs[index]?.mood || ""} name={`song_${index}_mood`} placeholder="バラード / ロック" {...textInputProps} />
-                </label>
-              </div>
-              <div className="grid two">
-                <label className="field">
-                  <span>曲の始まるきっかけ</span>
-                  <input className="input" defaultValue={order?.songs[index]?.startTrigger || ""} name={`song_${index}_start_trigger`} placeholder="ドラム4カウント / ギターから" {...textInputProps} />
-                </label>
-                <label className="field">
-                  <span>MC担当</span>
-                  <input className="input" defaultValue={order?.songs[index]?.mc.person || ""} name={`song_${index}_mc_person`} placeholder="Vo など" {...textInputProps} />
-                </label>
-              </div>
-              <label className="field">
-                <span>音響への要望</span>
-                <textarea className="textarea" defaultValue={order?.songs[index]?.paRequest || ""} name={`song_${index}_pa_request`} {...textareaProps} />
-              </label>
-            </div>
+            </details>
           ))}
         </div>
-      </section>
+      </details>
 
-      <section className="section">
-        <div className="section-title">
-          <div>
-            <h2>持ち込み機材</h2>
-            <p>マルチエフェクター、スネア、シンバルなどを入力してください。</p>
-          </div>
-        </div>
-        <div className="grid two">
+      <details className="section collapsible" open={Boolean(order?.equipment.length)}>
+        <summary>
+          <span>
+            <strong>持ち込み機材</strong>
+            <small>マルチエフェクター、スネア、シンバルなどを入力してください。</small>
+          </span>
+        </summary>
+        <div className="grid two collapsible-body">
           {equipment.map((item, index) => (
             <div className="mini-row" key={item.id}>
               <label className="field">
@@ -205,9 +212,9 @@ export function OrderForm({
             </div>
           ))}
         </div>
-      </section>
+      </details>
 
-      <section className="section">
+      <section className="section section-card">
         <label className="field">
           <span>バンド全体・全曲通しての要望</span>
           <textarea className="textarea" defaultValue={order?.generalRequest || ""} name="general_request" {...textareaProps} />

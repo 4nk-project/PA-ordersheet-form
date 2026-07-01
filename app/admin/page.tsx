@@ -1,8 +1,8 @@
 import { addLiveEvent, changeLiveEventSongCount, removeLiveEvent } from "@/app/actions";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { listOrderSummaries } from "@/lib/orders";
-import { formatDateTime, statusLabels } from "@/lib/format";
 import { logout } from "./login/actions";
+import { AdminOrderList } from "./admin-order-list";
 
 export const dynamic = "force-dynamic";
 
@@ -114,52 +114,7 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        <section className="section">
-          {orders.length === 0 ? (
-            <p className="empty">まだ提出はありません。</p>
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>ライブ</th>
-                    <th>バンド名</th>
-                    <th>代表者</th>
-                    <th>曲数</th>
-                    <th>音源</th>
-                    <th>ステータス</th>
-                    <th>提出日時</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td>{order.liveEventName || "-"}</td>
-                      <td>
-                        <strong>{order.bandName}</strong>
-                      </td>
-                      <td>{order.contactName}</td>
-                      <td>{order.songCount} / {order.liveEventSongCount || order.songCount}曲</td>
-                      <td>{order.usesBackingTrack ? "あり" : "なし"}</td>
-                      <td>
-                        <span className={`badge ${order.status === "new" ? "warn" : order.status === "done" ? "done" : ""}`}>
-                          {statusLabels[order.status]}
-                        </span>
-                      </td>
-                      <td>{formatDateTime(order.createdAt)}</td>
-                      <td>
-                        <a className="button secondary" href={`/admin/orders/${order.id}`}>
-                          詳細
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        <AdminOrderList liveEvents={liveEvents} orders={orders} />
       </section>
     </main>
   );
