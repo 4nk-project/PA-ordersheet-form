@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { submitOrder, updateAdminOrder, updateSubmittedOrder } from "./actions";
 import {
   DEFAULT_EQUIPMENT_COUNT,
@@ -25,6 +25,8 @@ export function OrderForm({
   order?: PAOrder;
   updated?: boolean;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const draftKey = `pa-order-form:${mode}:${order?.id || "new"}`;
   const [selectedLiveEventId, setSelectedLiveEventId] = useState(order?.liveEventId || "");
   const selectedLiveEvent = liveEvents.find((event) => event.id === selectedLiveEventId);
   const songCount = selectedLiveEvent?.songCount ?? order?.liveEventSongCount ?? DEFAULT_SONG_COUNT;
@@ -34,11 +36,93 @@ export function OrderForm({
   const songs = useMemo(() => makeEmptySongs(songCount), [songCount]);
   const equipment = useMemo(() => makeEmptyEquipment(DEFAULT_EQUIPMENT_COUNT), []);
 
+  function saveDraft() {
+    const form = formRef.current;
+    if (!form) return;
+
+    const draft: Record<string, string | boolean> = {};
+    const fields = form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      "input[name], textarea[name], select[name]",
+    );
+
+    fields.forEach((field) => {
+      if (field instanceof HTMLInputElement && field.type === "checkbox") {
+        draft[field.name] = field.checked;
+        return;
+      }
+
+      draft[field.name] = field.value;
+    });
+
+    sessionStorage.setItem(draftKey, JSON.stringify(draft));
+  }
+
+  function restoreDraft() {
+    const form = formRef.current;
+    if (!form) return;
+
+    const rawDraft = sessionStorage.getItem(draftKey);
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft) as Record<string, string | boolean>;
+
+      Object.entries(draft).forEach(([name, value]) => {
+        const field = form.elements.namedItem(name);
+        if (!field || field instanceof RadioNodeList) return;
+
+        if (field instanceof HTMLInputElement && field.type === "checkbox") {
+          field.checked = value === true;
+          return;
+        }
+
+        if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
+          field.value = String(value);
+        }
+      });
+    } catch {
+      sessionStorage.removeItem(draftKey);
+    }
+  }
+
+  useEffect(() => {
+    const rawDraft = sessionStorage.getItem(draftKey);
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft) as Record<string, string | boolean>;
+      const draftLiveEventId = typeof draft.live_event_id === "string" ? draft.live_event_id : "";
+      if (draftLiveEventId) {
+        setSelectedLiveEventId(draftLiveEventId);
+      }
+    } catch {
+      sessionStorage.removeItem(draftKey);
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    restoreDraft();
+  });
+
   return (
     <form
+      ref={formRef}
       className="container"
       action={action}
+      onInput={saveDraft}
+      onChange={saveDraft}
+      onKeyDown={(event) => {
+        const target = event.target;
+
+        if (event.key !== "Enter" || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement) {
+          return;
+        }
+
+        event.preventDefault();
+      }}
       onSubmit={(event) => {
+        saveDraft();
+
         if (mode === "admin" && !window.confirm("提出内容を変更します。本当に保存しますか？")) {
           event.preventDefault();
         }
