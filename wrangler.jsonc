@@ -24,7 +24,11 @@
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
 	},
-	"vars": {
-  		"NEXT_PUBLIC_SUPABASE_URL": "https://jeqawimakczggvzziubb.supabase.co"
-	}
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "pa-ordersheet-form",
+			"database_id": "7e1a8781-06ee-4deb-b7c1-dbf19b16c5a7"
+		}
+	]
 }

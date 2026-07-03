@@ -1,48 +1,52 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { assertD1Result, getD1Database, type D1DatabaseBinding } from "@/lib/d1/server";
 import type { Equipment, Member, OrderStatus, OrderSummary, PAOrder, Song } from "@/types/order";
 
 type OrderRow = {
-  id: string;
+  band_name: string;
+  contact_name: string;
+  created_at: string;
   edit_token: string;
+  general_request: string | null;
+  id: string;
   live_event_id: string;
   live_event_name: string | null;
   live_event_song_count: number | null;
-  band_name: string;
-  contact_name: string;
   microphone_count: number | null;
-  uses_backing_track: boolean | null;
-  general_request: string | null;
   status: OrderStatus;
-  created_at: string;
   updated_at: string;
+  uses_backing_track: number | null;
+};
+
+type OrderSummaryRow = OrderRow & {
+  song_count: number;
 };
 
 type MemberRow = {
   id: string;
-  order_id: string;
-  name: string | null;
   instrument: string | null;
+  name: string | null;
+  order_id: string;
   position: number | null;
 };
 
 type SongRow = {
-  id: string;
-  order_id: string;
-  song_order: number;
-  title: string | null;
   duration: string | null;
-  mood: string | null;
-  start_trigger: string | null;
-  pa_request: string | null;
-  has_mc: boolean | null;
+  has_mc: number | null;
+  id: string;
   mc_person: string | null;
+  mood: string | null;
+  order_id: string;
+  pa_request: string | null;
+  song_order: number;
+  start_trigger: string | null;
+  title: string | null;
 };
 
 type EquipmentRow = {
   id: string;
-  order_id: string;
-  name: string | null;
   instrument: string | null;
+  name: string | null;
+  order_id: string;
   position: number | null;
 };
 
@@ -64,7 +68,7 @@ function songFromRow(row: SongRow): Song {
     startTrigger: row.start_trigger || "",
     paRequest: row.pa_request || "",
     mc: {
-      hasMc: row.has_mc || false,
+      hasMc: Boolean(row.has_mc),
       person: row.mc_person || "",
     },
   };
@@ -93,7 +97,7 @@ function orderFromRows(
     bandName: order.band_name,
     contactName: order.contact_name,
     microphoneCount: order.microphone_count || 0,
-    usesBackingTrack: order.uses_backing_track || false,
+    usesBackingTrack: Boolean(order.uses_backing_track),
     members: members.sort((a, b) => (a.position || 0) - (b.position || 0)).map(memberFromRow),
     songs: songs.sort((a, b) => a.song_order - b.song_order).map(songFromRow),
     equipment: equipment.sort((a, b) => (a.position || 0) - (b.position || 0)).map(equipmentFromRow),
@@ -104,191 +108,168 @@ function orderFromRows(
   };
 }
 
-function summaryFromOrder(order: PAOrder): OrderSummary {
+function summaryFromRow(order: OrderSummaryRow): OrderSummary {
   return {
     id: order.id,
-    editToken: order.editToken,
-    liveEventId: order.liveEventId,
-    liveEventName: order.liveEventName,
-    liveEventSongCount: order.liveEventSongCount,
-    bandName: order.bandName,
-    contactName: order.contactName,
-    songCount: order.songs.length,
-    usesBackingTrack: order.usesBackingTrack,
+    editToken: order.edit_token,
+    liveEventId: order.live_event_id,
+    liveEventName: order.live_event_name || "",
+    liveEventSongCount: order.live_event_song_count || order.song_count,
+    bandName: order.band_name,
+    contactName: order.contact_name,
+    songCount: order.song_count,
+    usesBackingTrack: Boolean(order.uses_backing_track),
     status: order.status,
-    createdAt: order.createdAt,
+    createdAt: order.created_at,
   };
 }
 
-function orderInsert(order: PAOrder) {
-  return {
-    edit_token: order.editToken,
-    live_event_id: order.liveEventId,
-    live_event_name: order.liveEventName,
-    live_event_song_count: order.liveEventSongCount,
-    band_name: order.bandName,
-    contact_name: order.contactName,
-    microphone_count: order.microphoneCount,
-    uses_backing_track: order.usesBackingTrack,
-    general_request: order.generalRequest,
-    status: order.status,
-  };
+function orderInsertValues(order: PAOrder) {
+  return [
+    order.id,
+    order.editToken,
+    order.liveEventId,
+    order.liveEventName,
+    order.liveEventSongCount,
+    order.bandName,
+    order.contactName,
+    order.microphoneCount,
+    order.usesBackingTrack ? 1 : 0,
+    order.generalRequest,
+    order.status,
+    order.createdAt,
+    order.updatedAt,
+  ];
 }
 
-function orderUpdate(order: PAOrder) {
-  return {
-    live_event_id: order.liveEventId,
-    live_event_name: order.liveEventName,
-    live_event_song_count: order.liveEventSongCount,
-    band_name: order.bandName,
-    contact_name: order.contactName,
-    microphone_count: order.microphoneCount,
-    uses_backing_track: order.usesBackingTrack,
-    general_request: order.generalRequest,
-    updated_at: new Date().toISOString(),
-  };
+function orderUpdateValues(order: PAOrder) {
+  return [
+    order.liveEventId,
+    order.liveEventName,
+    order.liveEventSongCount,
+    order.bandName,
+    order.contactName,
+    order.microphoneCount,
+    order.usesBackingTrack ? 1 : 0,
+    order.generalRequest,
+    new Date().toISOString(),
+  ];
+}
+
+function relatedInsertStatements(db: D1DatabaseBinding, orderId: string, order: PAOrder) {
+  return [
+    ...order.members.map((member, index) =>
+      db
+        .prepare("insert into members (id, order_id, name, instrument, position) values (?, ?, ?, ?, ?)")
+        .bind(`${orderId}_${member.id}`, orderId, member.name, member.instrument, index),
+    ),
+    ...order.songs.map((song) =>
+      db
+        .prepare(
+          "insert into songs (id, order_id, song_order, title, duration, mood, start_trigger, pa_request, has_mc, mc_person) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(
+          `${orderId}_${song.id}`,
+          orderId,
+          song.order,
+          song.title,
+          song.duration,
+          song.mood,
+          song.startTrigger,
+          song.paRequest,
+          song.mc.hasMc ? 1 : 0,
+          song.mc.person,
+        ),
+    ),
+    ...order.equipment.map((item, index) =>
+      db
+        .prepare("insert into equipment (id, order_id, name, instrument, position) values (?, ?, ?, ?, ?)")
+        .bind(`${orderId}_${item.id}`, orderId, item.name, item.instrument, index),
+    ),
+  ];
 }
 
 async function replaceRelatedRows(orderId: string, order: PAOrder) {
-  const supabase = createSupabaseAdminClient();
-
-  const deleteResults = await Promise.all([
-    supabase.from("members").delete().eq("order_id", orderId),
-    supabase.from("songs").delete().eq("order_id", orderId),
-    supabase.from("equipment").delete().eq("order_id", orderId),
+  const db = getD1Database();
+  const results = await db.batch([
+    db.prepare("delete from members where order_id = ?").bind(orderId),
+    db.prepare("delete from songs where order_id = ?").bind(orderId),
+    db.prepare("delete from equipment where order_id = ?").bind(orderId),
+    ...relatedInsertStatements(db, orderId, order),
   ]);
 
-  const deleteError = deleteResults.find((result) => result.error)?.error;
-  if (deleteError) {
-    throw new Error(`Failed to replace order details: ${deleteError.message}`);
-  }
-
-  const inserts = [];
-
-  if (order.members.length > 0) {
-    inserts.push(
-      supabase.from("members").insert(
-        order.members.map((member, index) => ({
-          order_id: orderId,
-          name: member.name,
-          instrument: member.instrument,
-          position: index,
-        })),
-      ),
-    );
-  }
-
-  if (order.songs.length > 0) {
-    inserts.push(
-      supabase.from("songs").insert(
-        order.songs.map((song) => ({
-          order_id: orderId,
-          song_order: song.order,
-          title: song.title,
-          duration: song.duration,
-          mood: song.mood,
-          start_trigger: song.startTrigger,
-          pa_request: song.paRequest,
-          has_mc: song.mc.hasMc,
-          mc_person: song.mc.person,
-        })),
-      ),
-    );
-  }
-
-  if (order.equipment.length > 0) {
-    inserts.push(
-      supabase.from("equipment").insert(
-        order.equipment.map((item, index) => ({
-          order_id: orderId,
-          name: item.name,
-          instrument: item.instrument,
-          position: index,
-        })),
-      ),
-    );
-  }
-
-  const insertResults = await Promise.all(inserts);
-  const insertError = insertResults.find((result) => result.error)?.error;
-  if (insertError) {
-    throw new Error(`Failed to save order details: ${insertError.message}`);
-  }
+  results.forEach((result) => assertD1Result(result, "Failed to replace order details"));
 }
 
 async function getRelatedRows(orderIds: string[]) {
-  const supabase = createSupabaseAdminClient();
+  const db = getD1Database();
 
   if (orderIds.length === 0) {
     return { members: [], songs: [], equipment: [] };
   }
 
+  const placeholders = orderIds.map(() => "?").join(", ");
   const [membersResult, songsResult, equipmentResult] = await Promise.all([
-    supabase.from("members").select("*").in("order_id", orderIds),
-    supabase.from("songs").select("*").in("order_id", orderIds),
-    supabase.from("equipment").select("*").in("order_id", orderIds),
+    db.prepare(`select * from members where order_id in (${placeholders})`).bind(...orderIds).all<MemberRow>(),
+    db.prepare(`select * from songs where order_id in (${placeholders})`).bind(...orderIds).all<SongRow>(),
+    db.prepare(`select * from equipment where order_id in (${placeholders})`).bind(...orderIds).all<EquipmentRow>(),
   ]);
 
-  const error = membersResult.error || songsResult.error || equipmentResult.error;
-  if (error) {
-    throw new Error(`Failed to fetch order details: ${error.message}`);
-  }
+  assertD1Result(membersResult, "Failed to fetch members");
+  assertD1Result(songsResult, "Failed to fetch songs");
+  assertD1Result(equipmentResult, "Failed to fetch equipment");
 
   return {
-    members: (membersResult.data || []) as MemberRow[],
-    songs: (songsResult.data || []) as SongRow[],
-    equipment: (equipmentResult.data || []) as EquipmentRow[],
+    members: membersResult.results || [],
+    songs: songsResult.results || [],
+    equipment: equipmentResult.results || [],
   };
 }
 
-async function getHydratedOrder(filter: { id?: string; editToken?: string }) {
-  const supabase = createSupabaseAdminClient();
-  let query = supabase.from("orders").select("*");
+async function getHydratedOrder(filter: { editToken?: string; id?: string }) {
+  const db = getD1Database();
+  const row = filter.id
+    ? await db.prepare("select * from orders where id = ?").bind(filter.id).first<OrderRow>()
+    : await db.prepare("select * from orders where edit_token = ?").bind(filter.editToken || "").first<OrderRow>();
 
-  if (filter.id) {
-    query = query.eq("id", filter.id);
-  }
+  if (!row) return null;
 
-  if (filter.editToken) {
-    query = query.eq("edit_token", filter.editToken);
-  }
-
-  const { data, error } = await query.maybeSingle();
-
-  if (error) {
-    throw new Error(`Failed to fetch order: ${error.message}`);
-  }
-
-  if (!data) return null;
-
-  const order = data as OrderRow;
-  const related = await getRelatedRows([order.id]);
+  const related = await getRelatedRows([row.id]);
 
   return orderFromRows(
-    order,
-    related.members.filter((row) => row.order_id === order.id),
-    related.songs.filter((row) => row.order_id === order.id),
-    related.equipment.filter((row) => row.order_id === order.id),
+    row,
+    related.members.filter((member) => member.order_id === row.id),
+    related.songs.filter((song) => song.order_id === row.id),
+    related.equipment.filter((item) => item.order_id === row.id),
   );
 }
 
 export async function createOrder(order: PAOrder) {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("orders").insert(orderInsert(order)).select("*").single();
+  const db = getD1Database();
+  const results = await db.batch([
+    db
+      .prepare(
+        "insert into orders (id, edit_token, live_event_id, live_event_name, live_event_song_count, band_name, contact_name, microphone_count, uses_backing_track, general_request, status, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .bind(...orderInsertValues(order)),
+    ...relatedInsertStatements(db, order.id, order),
+  ]);
 
-  if (error) {
-    throw new Error(`Failed to create order: ${error.message}`);
-  }
+  results.forEach((result) => assertD1Result(result, "Failed to create order"));
 
-  const createdOrder = data as OrderRow;
-  await replaceRelatedRows(createdOrder.id, order);
-
-  return getOrder(createdOrder.id);
+  return getOrder(order.id);
 }
 
 export async function listOrderSummaries(): Promise<OrderSummary[]> {
-  const orders = await listOrders();
-  return orders.map(summaryFromOrder);
+  const db = getD1Database();
+  const result = await db
+    .prepare(
+      "select orders.*, (select count(*) from songs where songs.order_id = orders.id) as song_count from orders order by created_at desc",
+    )
+    .all<OrderSummaryRow>();
+  assertD1Result(result, "Failed to fetch order summaries");
+
+  return (result.results || []).map(summaryFromRow);
 }
 
 export async function getOrder(id: string) {
@@ -303,81 +284,73 @@ export async function updateOrderByEditToken(editToken: string, nextOrder: PAOrd
   const existingOrder = await getOrderByEditToken(editToken);
   if (!existingOrder) return null;
 
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .update(orderUpdate(nextOrder))
-    .eq("edit_token", editToken)
-    .select("*")
-    .single();
+  const db = getD1Database();
+  const result = await db
+    .prepare(
+      "update orders set live_event_id = ?, live_event_name = ?, live_event_song_count = ?, band_name = ?, contact_name = ?, microphone_count = ?, uses_backing_track = ?, general_request = ?, updated_at = ? where edit_token = ?",
+    )
+    .bind(...orderUpdateValues(nextOrder), editToken)
+    .run();
+  assertD1Result(result, "Failed to update order");
 
-  if (error) {
-    throw new Error(`Failed to update order: ${error.message}`);
-  }
+  await replaceRelatedRows(existingOrder.id, nextOrder);
 
-  const updatedOrder = data as OrderRow;
-  await replaceRelatedRows(updatedOrder.id, nextOrder);
-
-  return getOrder(updatedOrder.id);
+  return getOrder(existingOrder.id);
 }
 
 export async function updateOrderById(id: string, nextOrder: PAOrder) {
   const existingOrder = await getOrder(id);
   if (!existingOrder) return null;
 
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .update(orderUpdate(nextOrder))
-    .eq("id", id)
-    .select("*")
-    .single();
+  const db = getD1Database();
+  const result = await db
+    .prepare(
+      "update orders set live_event_id = ?, live_event_name = ?, live_event_song_count = ?, band_name = ?, contact_name = ?, microphone_count = ?, uses_backing_track = ?, general_request = ?, updated_at = ? where id = ?",
+    )
+    .bind(...orderUpdateValues(nextOrder), id)
+    .run();
+  assertD1Result(result, "Failed to update order");
 
-  if (error) {
-    throw new Error(`Failed to update order: ${error.message}`);
-  }
+  await replaceRelatedRows(id, nextOrder);
 
-  const updatedOrder = data as OrderRow;
-  await replaceRelatedRows(updatedOrder.id, nextOrder);
-
-  return getOrder(updatedOrder.id);
+  return getOrder(id);
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("orders").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
-
-  if (error) {
-    throw new Error(`Failed to update order status: ${error.message}`);
-  }
+  const db = getD1Database();
+  const result = await db
+    .prepare("update orders set status = ?, updated_at = ? where id = ?")
+    .bind(status, new Date().toISOString(), id)
+    .run();
+  assertD1Result(result, "Failed to update order status");
 }
 
 export async function deleteOrder(id: string) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("orders").delete().eq("id", id);
+  const db = getD1Database();
+  const results = await db.batch([
+    db.prepare("delete from members where order_id = ?").bind(id),
+    db.prepare("delete from songs where order_id = ?").bind(id),
+    db.prepare("delete from equipment where order_id = ?").bind(id),
+    db.prepare("delete from orders where id = ?").bind(id),
+  ]);
 
-  if (error) {
-    throw new Error(`Failed to delete order: ${error.message}`);
-  }
+  results.forEach((result) => assertD1Result(result, "Failed to delete order"));
 }
 
 export async function listOrders() {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+  const db = getD1Database();
+  const result = await db.prepare("select * from orders order by created_at desc").all<OrderRow>();
+  assertD1Result(result, "Failed to fetch orders");
 
-  if (error) {
-    throw new Error(`Failed to fetch orders: ${error.message}`);
-  }
-
-  const orders = (data || []) as OrderRow[];
+  const orders = result.results || [];
   const related = await getRelatedRows(orders.map((order) => order.id));
 
   return orders.map((order) =>
     orderFromRows(
       order,
-      related.members.filter((row) => row.order_id === order.id),
-      related.songs.filter((row) => row.order_id === order.id),
-      related.equipment.filter((row) => row.order_id === order.id),
+      related.members.filter((member) => member.order_id === order.id),
+      related.songs.filter((song) => song.order_id === order.id),
+      related.equipment.filter((item) => item.order_id === order.id),
     ),
   );
 }

@@ -23,6 +23,11 @@ ADMIN_PASSWORD="your-strong-password"
 - `/admin` 提出一覧
 - `/admin/orders/[id]` バンド別詳細
 
-## Production Note
+## Database
 
-現在の保存先は開発・検証用のローカルJSONです。本番運用では `lib/orders.ts` の保存処理をSupabase/PostgreSQLへ置き換える想定です。
+保存先はCloudflare D1です。D1 bindingは `wrangler.jsonc` の `DB` を使います。
+
+```bash
+npx wrangler d1 migrations apply pa-ordersheet-form --local
+npx wrangler d1 migrations apply pa-ordersheet-form --remote
+```
