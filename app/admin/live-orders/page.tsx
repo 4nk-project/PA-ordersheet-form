@@ -1,8 +1,9 @@
-import { addLiveEventComment, addOrderComment, moveLiveOrder } from "@/app/actions";
+import { addLiveEventComment, addOrderComment, moveLiveOrder, removeLiveEventComment, removeOrderComment } from "@/app/actions";
 import { listLiveEventComments, listOrderComments } from "@/lib/comments";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { listOrdersByLiveEvent } from "@/lib/orders";
+import type { AdminComment } from "@/types/order";
 import { logout } from "../login/actions";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function LiveOrdersPage({
   const selectedLiveEvent = liveEvents.find((event) => event.id === params.live_event_id) || liveEvents[0];
   const orders = selectedLiveEvent ? await listOrdersByLiveEvent(selectedLiveEvent.id) : [];
   const liveEventComments = selectedLiveEvent ? await listLiveEventComments(selectedLiveEvent.id) : [];
+  const liveOrdersPath = selectedLiveEvent ? `/admin/live-orders?live_event_id=${encodeURIComponent(selectedLiveEvent.id)}` : "/admin/live-orders";
   const orderComments = new Map(
     await Promise.all(orders.map(async (order) => [order.id, await listOrderComments(order.id)] as const)),
   );
@@ -30,8 +32,14 @@ export default async function LiveOrdersPage({
           <span>演奏順管理</span>
         </a>
         <div className="actions">
+          <a className="button secondary" href="/">
+            提出フォーム
+          </a>
           <a className="button secondary" href="/admin">
             提出一覧
+          </a>
+          <a className="button secondary" href="/admin/live-orders">
+            演奏順管理
           </a>
           <form action={logout}>
             <button className="button secondary" type="submit">
@@ -106,7 +114,12 @@ export default async function LiveOrdersPage({
                 投稿
               </button>
             </form>
-            <CommentList emptyText="ライブコメントはまだありません。" comments={liveEventComments} />
+            <CommentList
+              comments={liveEventComments}
+              deleteAction={removeLiveEventComment}
+              emptyText="ライブコメントはまだありません。"
+              returnPath={liveOrdersPath}
+            />
           </section>
         ) : null}
 
@@ -178,7 +191,12 @@ export default async function LiveOrdersPage({
                           投稿
                         </button>
                       </form>
-                      <CommentList emptyText="バンドコメントはまだありません。" comments={comments} />
+                      <CommentList
+                        comments={comments}
+                        deleteAction={removeOrderComment}
+                        emptyText="バンドコメントはまだありません。"
+                        returnPath={liveOrdersPath}
+                      />
                     </details>
                   </div>
 
@@ -215,10 +233,14 @@ export default async function LiveOrdersPage({
 
 function CommentList({
   comments,
+  deleteAction,
   emptyText,
+  returnPath,
 }: {
-  comments: { authorName: string; body: string; createdAt: string; id: string }[];
+  comments: AdminComment[];
+  deleteAction: (formData: FormData) => void | Promise<void>;
   emptyText: string;
+  returnPath: string;
 }) {
   if (comments.length === 0) {
     return <p className="empty comment-empty">{emptyText}</p>;
@@ -229,8 +251,17 @@ function CommentList({
       {comments.map((comment) => (
         <article className="comment-item" key={comment.id}>
           <div className="comment-meta">
-            <strong>{comment.authorName}</strong>
-            <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
+            <span>
+              <strong>{comment.authorName}</strong>
+              <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
+            </span>
+            <form action={deleteAction}>
+              <input name="comment_id" type="hidden" value={comment.id} />
+              <input name="return_path" type="hidden" value={returnPath} />
+              <button className="button secondary small-button" type="submit">
+                削除
+              </button>
+            </form>
           </div>
           <p className="preline">{comment.body}</p>
         </article>

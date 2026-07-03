@@ -28,6 +28,15 @@ export default async function AdminEditOrderPage({
           <span>管理者編集</span>
         </a>
         <div className="actions">
+          <a className="button secondary" href="/">
+            提出フォーム
+          </a>
+          <a className="button secondary" href="/admin">
+            提出一覧
+          </a>
+          <a className="button secondary" href="/admin/live-orders">
+            演奏順管理
+          </a>
           <a className="button secondary" href={`/admin/orders/${order.id}`}>
             詳細へ戻る
           </a>

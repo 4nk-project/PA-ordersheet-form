@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { addOrderComment, changeStatus, removeOrder } from "@/app/actions";
+import { addOrderComment, changeStatus, removeOrder, removeOrderComment } from "@/app/actions";
 import { listOrderComments } from "@/lib/comments";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { getOrder } from "@/lib/orders";
@@ -32,8 +32,14 @@ export default async function OrderDetailPage({
           <span>管理画面</span>
         </a>
         <div className="actions">
+          <a className="button secondary" href="/">
+            提出フォーム
+          </a>
           <a className="button secondary" href="/admin">
-            一覧へ戻る
+            提出一覧
+          </a>
+          <a className="button secondary" href="/admin/live-orders">
+            演奏順管理
           </a>
           <form action={logout}>
             <button className="button secondary" type="submit">
@@ -230,8 +236,17 @@ export default async function OrderDetailPage({
               {comments.map((comment) => (
                 <article className="comment-item" key={comment.id}>
                   <div className="comment-meta">
-                    <strong>{comment.authorName}</strong>
-                    <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
+                    <span>
+                      <strong>{comment.authorName}</strong>
+                      <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
+                    </span>
+                    <form action={removeOrderComment}>
+                      <input name="comment_id" type="hidden" value={comment.id} />
+                      <input name="return_path" type="hidden" value={`/admin/orders/${order.id}`} />
+                      <button className="button secondary small-button" type="submit">
+                        削除
+                      </button>
+                    </form>
                   </div>
                   <p className="preline">{comment.body}</p>
                 </article>

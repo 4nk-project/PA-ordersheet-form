@@ -23,6 +23,12 @@ export default async function AdminPage() {
           <a className="button secondary" href="/">
             提出フォーム
           </a>
+          <a className="button secondary" href="/admin">
+            提出一覧
+          </a>
+          <a className="button secondary" href="/admin/live-orders">
+            演奏順管理
+          </a>
           <form action={logout}>
             <button className="button secondary" type="submit">
               ログアウト

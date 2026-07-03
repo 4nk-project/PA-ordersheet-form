@@ -316,6 +316,10 @@ button {
   padding-top: 18px;
 }
 
+.topbar .actions {
+  padding-top: 0;
+}
+
 .button {
   align-items: center;
   background: var(--accent);
@@ -706,6 +710,12 @@ button {
   padding-right: 10px;
 }
 
+.small-button {
+  font-size: 13px;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
 .comment-form {
   align-items: end;
   background: var(--surface);
@@ -750,6 +760,13 @@ button {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: space-between;
+}
+
+.comment-meta span {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .comment-meta time {

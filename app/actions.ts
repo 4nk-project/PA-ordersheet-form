@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAdminSession } from "@/lib/auth";
-import { createLiveEventComment, createOrderComment } from "@/lib/comments";
+import { createLiveEventComment, createOrderComment, deleteLiveEventComment, deleteOrderComment } from "@/lib/comments";
 import { createLiveEvent, deleteLiveEvent, getLiveEvent, updateLiveEventSongCount } from "@/lib/liveEvents";
 import {
   createOrder,
@@ -17,6 +17,11 @@ import {
 } from "@/lib/orders";
 import { orderFromFormData, validateOrder } from "@/lib/orderSchema";
 import type { OrderStatus } from "@/types/order";
+
+function adminReturnPath(value: FormDataEntryValue | null, fallback: string) {
+  const path = String(value || "");
+  return path.startsWith("/admin") ? path : fallback;
+}
 
 export async function submitOrder(formData: FormData) {
   const liveEventId = String(formData.get("live_event_id") || "");
@@ -144,6 +149,33 @@ export async function addOrderComment(formData: FormData) {
   const path = orderId ? `/admin/orders/${encodeURIComponent(orderId)}` : "/admin";
 
   await createOrderComment(orderId, authorName, body);
+  revalidatePath(path);
+  revalidatePath("/admin/live-orders");
+  redirect(path);
+}
+
+export async function removeLiveEventComment(formData: FormData) {
+  if (!(await isAdminSession())) {
+    redirect("/admin/login");
+  }
+
+  const id = String(formData.get("comment_id") || "");
+  const path = adminReturnPath(formData.get("return_path"), "/admin/live-orders");
+
+  await deleteLiveEventComment(id);
+  revalidatePath("/admin/live-orders");
+  redirect(path);
+}
+
+export async function removeOrderComment(formData: FormData) {
+  if (!(await isAdminSession())) {
+    redirect("/admin/login");
+  }
+
+  const id = String(formData.get("comment_id") || "");
+  const path = adminReturnPath(formData.get("return_path"), "/admin");
+
+  await deleteOrderComment(id);
   revalidatePath(path);
   revalidatePath("/admin/live-orders");
   redirect(path);
