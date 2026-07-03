@@ -130,6 +130,7 @@ export function orderFromFormData(formData: FormData, songCount = DEFAULT_SONG_C
     liveEventId: text(formData, "live_event_id"),
     liveEventName: text(formData, "live_event_name"),
     liveEventSongCount: songCount,
+    performanceOrder: null,
     bandName: text(formData, "band_name"),
     contactName: text(formData, "contact_name"),
     microphoneCount: Number(text(formData, "microphone_count") || 0),

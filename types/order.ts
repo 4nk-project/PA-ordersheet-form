@@ -39,6 +39,7 @@ export type PAOrder = {
   liveEventId: string;
   liveEventName: string;
   liveEventSongCount: number;
+  performanceOrder: number | null;
   bandName: string;
   contactName: string;
   microphoneCount: number;
@@ -58,6 +59,7 @@ export type OrderSummary = {
   liveEventId: string;
   liveEventName: string;
   liveEventSongCount: number;
+  performanceOrder: number | null;
   bandName: string;
   contactName: string;
   songCount: number;

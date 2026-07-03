@@ -3,7 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createLiveEvent, deleteLiveEvent, getLiveEvent, updateLiveEventSongCount } from "@/lib/liveEvents";
-import { createOrder, deleteOrder, getOrder, getOrderByEditToken, updateOrderByEditToken, updateOrderById, updateOrderStatus } from "@/lib/orders";
+import {
+  createOrder,
+  deleteOrder,
+  getOrder,
+  getOrderByEditToken,
+  moveOrderInLiveEvent,
+  updateOrderByEditToken,
+  updateOrderById,
+  updateOrderStatus,
+} from "@/lib/orders";
 import { orderFromFormData, validateOrder } from "@/lib/orderSchema";
 import type { OrderStatus } from "@/types/order";
 
@@ -92,6 +101,18 @@ export async function changeStatus(formData: FormData) {
     await updateOrderStatus(id, status);
     revalidatePath("/admin");
     revalidatePath(`/admin/orders/${id}`);
+  }
+}
+
+export async function moveLiveOrder(formData: FormData) {
+  const liveEventId = String(formData.get("live_event_id") || "");
+  const orderId = String(formData.get("order_id") || "");
+  const direction = String(formData.get("direction") || "");
+
+  if (liveEventId && orderId && (direction === "up" || direction === "down")) {
+    await moveOrderInLiveEvent(liveEventId, orderId, direction);
+    revalidatePath("/admin");
+    revalidatePath("/admin/live-orders");
   }
 }
 
