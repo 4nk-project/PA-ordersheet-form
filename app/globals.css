@@ -706,6 +706,72 @@ button {
   padding-right: 10px;
 }
 
+.comment-form {
+  align-items: end;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(140px, 220px) minmax(260px, 1fr) auto;
+  padding: 14px;
+}
+
+.comment-form .textarea {
+  min-height: 88px;
+}
+
+.compact-comment-form {
+  margin-top: 12px;
+}
+
+.comment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.comment-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.comment-item p {
+  line-height: 1.7;
+  margin: 0;
+}
+
+.comment-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.comment-meta time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.comment-empty {
+  padding: 8px 0;
+}
+
+.band-comments {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.band-comments summary {
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-weight: 700;
+}
+
 @media (max-width: 820px) {
   .grid.two,
   .grid.three,
@@ -714,7 +780,8 @@ button {
   .admin-live-grid,
   .filter-bar,
   .live-order-selector,
-  .live-order-card {
+  .live-order-card,
+  .comment-form {
     grid-template-columns: 1fr;
   }
 

@@ -1,4 +1,5 @@
-import { moveLiveOrder } from "@/app/actions";
+import { addLiveEventComment, addOrderComment, moveLiveOrder } from "@/app/actions";
+import { listLiveEventComments, listOrderComments } from "@/lib/comments";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { listOrdersByLiveEvent } from "@/lib/orders";
@@ -14,6 +15,10 @@ export default async function LiveOrdersPage({
   const [params, liveEvents] = await Promise.all([searchParams, listLiveEvents()]);
   const selectedLiveEvent = liveEvents.find((event) => event.id === params.live_event_id) || liveEvents[0];
   const orders = selectedLiveEvent ? await listOrdersByLiveEvent(selectedLiveEvent.id) : [];
+  const liveEventComments = selectedLiveEvent ? await listLiveEventComments(selectedLiveEvent.id) : [];
+  const orderComments = new Map(
+    await Promise.all(orders.map(async (order) => [order.id, await listOrderComments(order.id)] as const)),
+  );
   const totalSongs = orders.reduce((sum, order) => sum + order.songs.length, 0);
   const backingTrackCount = orders.filter((order) => order.usesBackingTrack).length;
 
@@ -79,6 +84,32 @@ export default async function LiveOrdersPage({
           </form>
         </section>
 
+        {selectedLiveEvent ? (
+          <section className="section">
+            <div className="section-title">
+              <div>
+                <h2>ライブコメント</h2>
+                <p>このライブ全体に関する管理者向けメモを残せます。</p>
+              </div>
+            </div>
+            <form className="comment-form" action={addLiveEventComment}>
+              <input name="live_event_id" type="hidden" value={selectedLiveEvent.id} />
+              <label className="field">
+                <span>名前</span>
+                <input className="input" name="author_name" required />
+              </label>
+              <label className="field">
+                <span>本文</span>
+                <textarea className="textarea" name="body" required />
+              </label>
+              <button className="button" type="submit">
+                投稿
+              </button>
+            </form>
+            <CommentList emptyText="ライブコメントはまだありません。" comments={liveEventComments} />
+          </section>
+        ) : null}
+
         <section className="section">
           {orders.length === 0 ? (
             <p className="empty">このライブの提出はまだありません。</p>
@@ -86,6 +117,11 @@ export default async function LiveOrdersPage({
             <div className="live-order-list">
               {orders.map((order, index) => (
                 <article className="live-order-card" key={order.id}>
+                  {(() => {
+                    const comments = orderComments.get(order.id) || [];
+
+                    return (
+                      <>
                   <div className="live-order-rank">
                     <span>出演順</span>
                     <strong>{index + 1}</strong>
@@ -125,6 +161,25 @@ export default async function LiveOrdersPage({
                         ))}
                       </ol>
                     </details>
+
+                    <details className="band-comments">
+                      <summary>バンドコメント {comments.length > 0 ? `(${comments.length})` : ""}</summary>
+                      <form className="comment-form compact-comment-form" action={addOrderComment}>
+                        <input name="order_id" type="hidden" value={order.id} />
+                        <label className="field">
+                          <span>名前</span>
+                          <input className="input" name="author_name" required />
+                        </label>
+                        <label className="field">
+                          <span>本文</span>
+                          <textarea className="textarea" name="body" required />
+                        </label>
+                        <button className="button" type="submit">
+                          投稿
+                        </button>
+                      </form>
+                      <CommentList emptyText="バンドコメントはまだありません。" comments={comments} />
+                    </details>
                   </div>
 
                   <div className="live-order-controls">
@@ -145,6 +200,9 @@ export default async function LiveOrdersPage({
                       </button>
                     </form>
                   </div>
+                      </>
+                    );
+                  })()}
                 </article>
               ))}
             </div>
@@ -152,5 +210,31 @@ export default async function LiveOrdersPage({
         </section>
       </section>
     </main>
+  );
+}
+
+function CommentList({
+  comments,
+  emptyText,
+}: {
+  comments: { authorName: string; body: string; createdAt: string; id: string }[];
+  emptyText: string;
+}) {
+  if (comments.length === 0) {
+    return <p className="empty comment-empty">{emptyText}</p>;
+  }
+
+  return (
+    <div className="comment-list">
+      {comments.map((comment) => (
+        <article className="comment-item" key={comment.id}>
+          <div className="comment-meta">
+            <strong>{comment.authorName}</strong>
+            <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
+          </div>
+          <p className="preline">{comment.body}</p>
+        </article>
+      ))}
+    </div>
   );
 }

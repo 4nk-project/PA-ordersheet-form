@@ -33,6 +33,13 @@ export type LiveEvent = {
   createdAt: string;
 };
 
+export type AdminComment = {
+  id: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+};
+
 export type PAOrder = {
   id: string;
   editToken: string;
