@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "20.19.6"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "build": "next build",
@@ -27,7 +27,7 @@
     "@types/node": "^22.15.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.8.0",
+    "typescript": "5.9.3",
     "wrangler": "^4.93.1"
   }
 }
