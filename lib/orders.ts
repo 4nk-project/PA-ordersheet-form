@@ -12,6 +12,7 @@ type OrderRow = {
   live_event_name: string | null;
   live_event_song_count: number | null;
   microphone_count: number | null;
+  performance_order: number | null;
   status: OrderStatus;
   updated_at: string;
   uses_backing_track: number | null;
@@ -94,6 +95,7 @@ function orderFromRows(
     liveEventId: order.live_event_id,
     liveEventName: order.live_event_name || "",
     liveEventSongCount: order.live_event_song_count || songs.length,
+    performanceOrder: order.performance_order,
     bandName: order.band_name,
     contactName: order.contact_name,
     microphoneCount: order.microphone_count || 0,
@@ -115,6 +117,7 @@ function summaryFromRow(order: OrderSummaryRow): OrderSummary {
     liveEventId: order.live_event_id,
     liveEventName: order.live_event_name || "",
     liveEventSongCount: order.live_event_song_count || order.song_count,
+    performanceOrder: order.performance_order,
     bandName: order.band_name,
     contactName: order.contact_name,
     songCount: order.song_count,
@@ -131,6 +134,7 @@ function orderInsertValues(order: PAOrder) {
     order.liveEventId,
     order.liveEventName,
     order.liveEventSongCount,
+    order.performanceOrder,
     order.bandName,
     order.contactName,
     order.microphoneCount,
@@ -147,6 +151,7 @@ function orderUpdateValues(order: PAOrder) {
     order.liveEventId,
     order.liveEventName,
     order.liveEventSongCount,
+    order.performanceOrder,
     order.bandName,
     order.contactName,
     order.microphoneCount,
@@ -246,13 +251,15 @@ async function getHydratedOrder(filter: { editToken?: string; id?: string }) {
 
 export async function createOrder(order: PAOrder) {
   const db = getD1Database();
+  const performanceOrder = order.performanceOrder ?? (await getNextPerformanceOrder(order.liveEventId));
+  const nextOrder = { ...order, performanceOrder };
   const results = await db.batch([
     db
       .prepare(
-        "insert into orders (id, edit_token, live_event_id, live_event_name, live_event_song_count, band_name, contact_name, microphone_count, uses_backing_track, general_request, status, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "insert into orders (id, edit_token, live_event_id, live_event_name, live_event_song_count, performance_order, band_name, contact_name, microphone_count, uses_backing_track, general_request, status, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
-      .bind(...orderInsertValues(order)),
-    ...relatedInsertStatements(db, order.id, order),
+      .bind(...orderInsertValues(nextOrder)),
+    ...relatedInsertStatements(db, order.id, nextOrder),
   ]);
 
   results.forEach((result) => assertD1Result(result, "Failed to create order"));
@@ -284,16 +291,24 @@ export async function updateOrderByEditToken(editToken: string, nextOrder: PAOrd
   const existingOrder = await getOrderByEditToken(editToken);
   if (!existingOrder) return null;
 
+  const performanceOrder =
+    existingOrder.liveEventId === nextOrder.liveEventId
+      ? existingOrder.performanceOrder
+      : await getNextPerformanceOrder(nextOrder.liveEventId);
+  const orderWithPerformanceOrder = { ...nextOrder, performanceOrder };
   const db = getD1Database();
   const result = await db
     .prepare(
-      "update orders set live_event_id = ?, live_event_name = ?, live_event_song_count = ?, band_name = ?, contact_name = ?, microphone_count = ?, uses_backing_track = ?, general_request = ?, updated_at = ? where edit_token = ?",
+      "update orders set live_event_id = ?, live_event_name = ?, live_event_song_count = ?, performance_order = ?, band_name = ?, contact_name = ?, microphone_count = ?, uses_backing_track = ?, general_request = ?, updated_at = ? where edit_token = ?",
     )
-    .bind(...orderUpdateValues(nextOrder), editToken)
+    .bind(...orderUpdateValues(orderWithPerformanceOrder), editToken)
     .run();
   assertD1Result(result, "Failed to update order");
 
-  await replaceRelatedRows(existingOrder.id, nextOrder);
+  await replaceRelatedRows(existingOrder.id, orderWithPerformanceOrder);
+  if (existingOrder.liveEventId && existingOrder.liveEventId !== orderWithPerformanceOrder.liveEventId) {
+    await normalizePerformanceOrders(existingOrder.liveEventId);
+  }
 
   return getOrder(existingOrder.id);
 }
@@ -302,16 +317,24 @@ export async function updateOrderById(id: string, nextOrder: PAOrder) {
   const existingOrder = await getOrder(id);
   if (!existingOrder) return null;
 
+  const performanceOrder =
+    existingOrder.liveEventId === nextOrder.liveEventId
+      ? existingOrder.performanceOrder
+      : await getNextPerformanceOrder(nextOrder.liveEventId);
+  const orderWithPerformanceOrder = { ...nextOrder, performanceOrder };
   const db = getD1Database();
   const result = await db
     .prepare(
-      "update orders set live_event_id = ?, live_event_name = ?, live_event_song_count = ?, band_name = ?, contact_name = ?, microphone_count = ?, uses_backing_track = ?, general_request = ?, updated_at = ? where id = ?",
+      "update orders set live_event_id = ?, live_event_name = ?, live_event_song_count = ?, performance_order = ?, band_name = ?, contact_name = ?, microphone_count = ?, uses_backing_track = ?, general_request = ?, updated_at = ? where id = ?",
     )
-    .bind(...orderUpdateValues(nextOrder), id)
+    .bind(...orderUpdateValues(orderWithPerformanceOrder), id)
     .run();
   assertD1Result(result, "Failed to update order");
 
-  await replaceRelatedRows(id, nextOrder);
+  await replaceRelatedRows(id, orderWithPerformanceOrder);
+  if (existingOrder.liveEventId && existingOrder.liveEventId !== orderWithPerformanceOrder.liveEventId) {
+    await normalizePerformanceOrders(existingOrder.liveEventId);
+  }
 
   return getOrder(id);
 }
@@ -327,6 +350,7 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
 
 export async function deleteOrder(id: string) {
   const db = getD1Database();
+  const existingOrder = await getOrder(id);
   const results = await db.batch([
     db.prepare("delete from members where order_id = ?").bind(id),
     db.prepare("delete from songs where order_id = ?").bind(id),
@@ -335,6 +359,9 @@ export async function deleteOrder(id: string) {
   ]);
 
   results.forEach((result) => assertD1Result(result, "Failed to delete order"));
+  if (existingOrder?.liveEventId) {
+    await normalizePerformanceOrders(existingOrder.liveEventId);
+  }
 }
 
 export async function listOrders() {
@@ -353,4 +380,92 @@ export async function listOrders() {
       related.equipment.filter((item) => item.order_id === order.id),
     ),
   );
+}
+
+async function getNextPerformanceOrder(liveEventId: string) {
+  if (!liveEventId) return null;
+
+  const db = getD1Database();
+  const row = await db
+    .prepare("select max(performance_order) as max_order from orders where live_event_id = ?")
+    .bind(liveEventId)
+    .first<{ max_order: number | null }>();
+
+  return (row?.max_order || 0) + 1;
+}
+
+async function getOrderedRowsByLiveEvent(liveEventId: string) {
+  const db = getD1Database();
+  const result = await db
+    .prepare(
+      "select orders.*, (select count(*) from songs where songs.order_id = orders.id) as song_count from orders where live_event_id = ? order by coalesce(performance_order, 999999), created_at asc",
+    )
+    .bind(liveEventId)
+    .all<OrderSummaryRow>();
+  assertD1Result(result, "Failed to fetch live event orders");
+
+  return result.results || [];
+}
+
+async function normalizePerformanceOrders(liveEventId: string) {
+  if (!liveEventId) return;
+
+  const db = getD1Database();
+  const rows = await getOrderedRowsByLiveEvent(liveEventId);
+  if (rows.length === 0) return;
+
+  const now = new Date().toISOString();
+  const results = await db.batch(
+    rows.map((order, index) =>
+      db
+        .prepare("update orders set performance_order = ?, updated_at = ? where id = ?")
+        .bind(index + 1, now, order.id),
+    ),
+  );
+
+  results.forEach((result) => assertD1Result(result, "Failed to normalize performance orders"));
+}
+
+export async function listOrdersByLiveEvent(liveEventId: string) {
+  if (!liveEventId) return [];
+
+  await normalizePerformanceOrders(liveEventId);
+
+  const rows = await getOrderedRowsByLiveEvent(liveEventId);
+  const related = await getRelatedRows(rows.map((order) => order.id));
+
+  return rows.map((order) =>
+    orderFromRows(
+      order,
+      related.members.filter((member) => member.order_id === order.id),
+      related.songs.filter((song) => song.order_id === order.id),
+      related.equipment.filter((item) => item.order_id === order.id),
+    ),
+  );
+}
+
+export async function moveOrderInLiveEvent(liveEventId: string, orderId: string, direction: "up" | "down") {
+  if (!liveEventId || !orderId) return;
+
+  const rows = await getOrderedRowsByLiveEvent(liveEventId);
+  const currentIndex = rows.findIndex((order) => order.id === orderId);
+  const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= rows.length) return;
+
+  const nextRows = [...rows];
+  const [movedOrder] = nextRows.splice(currentIndex, 1);
+  nextRows.splice(nextIndex, 0, movedOrder);
+
+  const db = getD1Database();
+  const now = new Date().toISOString();
+  const results = await db.batch(
+    nextRows.map((order, index) =>
+      db
+        .prepare("update orders set performance_order = ?, updated_at = ? where id = ? and live_event_id = ?")
+        .bind(index + 1, now, order.id, liveEventId),
+    ),
+  );
+
+  results.forEach((result) => assertD1Result(result, "Failed to update performance order"));
 }

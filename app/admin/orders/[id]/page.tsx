@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { changeStatus, removeOrder } from "@/app/actions";
+import { addOrderComment, changeStatus, removeOrder } from "@/app/actions";
+import { listOrderComments } from "@/lib/comments";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { getOrder } from "@/lib/orders";
 import type { OrderStatus } from "@/types/order";
@@ -17,7 +18,7 @@ export default async function OrderDetailPage({
   searchParams: Promise<{ updated?: string }>;
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const order = await getOrder(id);
+  const [order, comments] = await Promise.all([getOrder(id), listOrderComments(id)]);
 
   if (!order) {
     notFound();
@@ -199,6 +200,44 @@ export default async function OrderDetailPage({
               <div className="panel preline">{order.generalRequest || "全体要望は未入力です。"}</div>
             </div>
           </div>
+        </section>
+
+        <section className="section">
+          <div className="section-title">
+            <div>
+              <h2>管理者コメント</h2>
+              <p>このバンドに関する内部メモです。提出者には表示されません。</p>
+            </div>
+          </div>
+          <form className="comment-form" action={addOrderComment}>
+            <input name="order_id" type="hidden" value={order.id} />
+            <label className="field">
+              <span>名前</span>
+              <input className="input" name="author_name" required />
+            </label>
+            <label className="field">
+              <span>本文</span>
+              <textarea className="textarea" name="body" required />
+            </label>
+            <button className="button" type="submit">
+              投稿
+            </button>
+          </form>
+          {comments.length === 0 ? (
+            <p className="empty comment-empty">管理者コメントはまだありません。</p>
+          ) : (
+            <div className="comment-list">
+              {comments.map((comment) => (
+                <article className="comment-item" key={comment.id}>
+                  <div className="comment-meta">
+                    <strong>{comment.authorName}</strong>
+                    <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
+                  </div>
+                  <p className="preline">{comment.body}</p>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="section">

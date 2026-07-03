@@ -34,6 +34,11 @@ export default async function AdminPage() {
         <div className="hero">
           <h1>提出一覧</h1>
           <p>バンドごとに提出状況、曲数、音源使用の有無を確認できます。</p>
+          <div className="actions">
+            <a className="button" href="/admin/live-orders">
+              演奏順を管理
+            </a>
+          </div>
         </div>
 
         <div className="meta-grid">

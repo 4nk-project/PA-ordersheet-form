@@ -2,8 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isAdminSession } from "@/lib/auth";
+import { createLiveEventComment, createOrderComment } from "@/lib/comments";
 import { createLiveEvent, deleteLiveEvent, getLiveEvent, updateLiveEventSongCount } from "@/lib/liveEvents";
-import { createOrder, deleteOrder, getOrder, getOrderByEditToken, updateOrderByEditToken, updateOrderById, updateOrderStatus } from "@/lib/orders";
+import {
+  createOrder,
+  deleteOrder,
+  getOrder,
+  getOrderByEditToken,
+  moveOrderInLiveEvent,
+  updateOrderByEditToken,
+  updateOrderById,
+  updateOrderStatus,
+} from "@/lib/orders";
 import { orderFromFormData, validateOrder } from "@/lib/orderSchema";
 import type { OrderStatus } from "@/types/order";
 
@@ -93,6 +104,49 @@ export async function changeStatus(formData: FormData) {
     revalidatePath("/admin");
     revalidatePath(`/admin/orders/${id}`);
   }
+}
+
+export async function moveLiveOrder(formData: FormData) {
+  const liveEventId = String(formData.get("live_event_id") || "");
+  const orderId = String(formData.get("order_id") || "");
+  const direction = String(formData.get("direction") || "");
+
+  if (liveEventId && orderId && (direction === "up" || direction === "down")) {
+    await moveOrderInLiveEvent(liveEventId, orderId, direction);
+    revalidatePath("/admin");
+    revalidatePath("/admin/live-orders");
+  }
+}
+
+export async function addLiveEventComment(formData: FormData) {
+  if (!(await isAdminSession())) {
+    redirect("/admin/login");
+  }
+
+  const liveEventId = String(formData.get("live_event_id") || "");
+  const authorName = String(formData.get("author_name") || "");
+  const body = String(formData.get("body") || "");
+  const path = liveEventId ? `/admin/live-orders?live_event_id=${encodeURIComponent(liveEventId)}` : "/admin/live-orders";
+
+  await createLiveEventComment(liveEventId, authorName, body);
+  revalidatePath("/admin/live-orders");
+  redirect(path);
+}
+
+export async function addOrderComment(formData: FormData) {
+  if (!(await isAdminSession())) {
+    redirect("/admin/login");
+  }
+
+  const orderId = String(formData.get("order_id") || "");
+  const authorName = String(formData.get("author_name") || "");
+  const body = String(formData.get("body") || "");
+  const path = orderId ? `/admin/orders/${encodeURIComponent(orderId)}` : "/admin";
+
+  await createOrderComment(orderId, authorName, body);
+  revalidatePath(path);
+  revalidatePath("/admin/live-orders");
+  redirect(path);
 }
 
 export async function removeOrder(formData: FormData) {
