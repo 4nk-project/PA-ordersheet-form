@@ -1,19 +1,24 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { adminCookieName, getAdminPassword } from "@/lib/auth";
+import { adminCookieName, canAttemptAdminLogin, clearAdminLoginFailures, createAdminSessionValue, getAdminPassword, recordAdminLoginFailure } from "@/lib/auth";
 
 export async function login(formData: FormData) {
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || "/admin");
+  const headerStore = await headers();
+  const attemptKey = (headerStore.get("cf-connecting-ip") || headerStore.get("x-forwarded-for")?.split(",")[0] || "local").trim().slice(0, 80);
 
-  if (password !== getAdminPassword()) {
+  if (!canAttemptAdminLogin(attemptKey) || password !== getAdminPassword()) {
+    recordAdminLoginFailure(attemptKey);
     redirect(`/admin/login?error=1&next=${encodeURIComponent(next)}`);
   }
+  clearAdminLoginFailures(attemptKey);
 
   const cookieStore = await cookies();
-  cookieStore.set(adminCookieName, "1", {
+  cookieStore.set(adminCookieName, await createAdminSessionValue(), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

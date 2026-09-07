@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import { addOrderComment, changeStatus, removeOrder, removeOrderComment } from "@/app/actions";
+import { addOrderComment, removeOrderComment } from "@/app/actions";
 import { listOrderComments } from "@/lib/comments";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { getOrder } from "@/lib/orders";
-import type { OrderStatus } from "@/types/order";
+import { requireAdminSession } from "@/lib/auth";
 import { logout } from "../../login/actions";
-
-const statuses: OrderStatus[] = ["new", "reviewing", "done"];
+import { ChangeStatusForm, DeleteOrderForm } from "./admin-controls";
+import { ConfirmSubmitButton } from "@/components/ui/ConfirmSubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,7 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ updated?: string }>;
 }) {
+  await requireAdminSession();
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const [order, comments] = await Promise.all([getOrder(id), listOrderComments(id)]);
 
@@ -41,6 +42,7 @@ export default async function OrderDetailPage({
           <a className="button secondary" href="/admin/live-orders">
             演奏順管理
           </a>
+          <a className="button secondary" href="/admin/settings/live-events">ライブ設定</a>
           <form action={logout}>
             <button className="button secondary" type="submit">
               ログアウト
@@ -54,7 +56,7 @@ export default async function OrderDetailPage({
           <div className="hero">
             <h1>{order.bandName}</h1>
             <p>
-              提出日時: {formatDateTime(order.createdAt)} / 代表者: {order.contactName}
+              提出日時: {formatDateTime(order.createdAt)} / 提出者による最終更新: {formatDateTime(order.updatedAt)} / 代表者: {order.contactName}
             </p>
             <div className="actions">
               <a className="button secondary" href={`/admin/orders/${order.id}/edit`}>
@@ -62,19 +64,7 @@ export default async function OrderDetailPage({
               </a>
             </div>
           </div>
-          <form className="actions status-form" action={changeStatus}>
-            <input name="id" type="hidden" value={order.id} />
-            <select className="select" defaultValue={order.status} name="status">
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {statusLabels[status]}
-                </option>
-              ))}
-            </select>
-            <button className="button" type="submit">
-              更新
-            </button>
-          </form>
+          <ChangeStatusForm id={order.id} status={order.status} />
         </div>
 
         <div className="meta-grid">
@@ -219,11 +209,11 @@ export default async function OrderDetailPage({
             <input name="order_id" type="hidden" value={order.id} />
             <label className="field">
               <span>名前</span>
-              <input className="input" name="author_name" required />
+              <input className="input" maxLength={80} name="author_name" required />
             </label>
             <label className="field">
               <span>本文</span>
-              <textarea className="textarea" name="body" required />
+              <textarea className="textarea" maxLength={2000} name="body" required />
             </label>
             <button className="button" type="submit">
               投稿
@@ -243,9 +233,7 @@ export default async function OrderDetailPage({
                     <form action={removeOrderComment}>
                       <input name="comment_id" type="hidden" value={comment.id} />
                       <input name="return_path" type="hidden" value={`/admin/orders/${order.id}`} />
-                      <button className="button secondary small-button" type="submit">
-                        削除
-                      </button>
+                      <ConfirmSubmitButton title="コメントを削除しますか？" description="このコメントを削除します。操作は取り消せません。" />
                     </form>
                   </div>
                   <p className="preline">{comment.body}</p>
@@ -261,12 +249,7 @@ export default async function OrderDetailPage({
               <h2>提出内容の削除</h2>
               <p>削除すると、このバンドの提出内容は管理画面から見られなくなります。</p>
             </div>
-            <form action={removeOrder}>
-              <input name="id" type="hidden" value={order.id} />
-              <button className="button danger" type="submit">
-                この提出を削除
-              </button>
-            </form>
+            <DeleteOrderForm id={order.id} bandName={order.bandName} />
           </div>
         </section>
       </section>
