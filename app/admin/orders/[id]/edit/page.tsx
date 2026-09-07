@@ -3,17 +3,17 @@ import { OrderForm } from "@/app/order-form";
 import { logout } from "@/app/admin/login/actions";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { getOrder } from "@/lib/orders";
+import { requireAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEditOrderPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
 }) {
-  const [{ id }, query] = await Promise.all([params, searchParams]);
+  await requireAdminSession();
+  const { id } = await params;
   const [order, liveEvents] = await Promise.all([getOrder(id), listLiveEvents()]);
 
   if (!order) {
@@ -28,6 +28,15 @@ export default async function AdminEditOrderPage({
           <span>管理者編集</span>
         </a>
         <div className="actions">
+          <a className="button secondary" href="/">
+            提出フォーム
+          </a>
+          <a className="button secondary" href="/admin">
+            提出一覧
+          </a>
+          <a className="button secondary" href="/admin/live-orders">
+            演奏順管理
+          </a>
           <a className="button secondary" href={`/admin/orders/${order.id}`}>
             詳細へ戻る
           </a>
@@ -38,7 +47,7 @@ export default async function AdminEditOrderPage({
           </form>
         </div>
       </header>
-      <OrderForm error={query.error} liveEvents={liveEvents} mode="admin" order={order} />
+      <OrderForm liveEvents={liveEvents} mode="admin" order={order} />
     </main>
   );
 }

@@ -92,3 +92,23 @@ export async function createOrderComment(orderId: string, authorName: string, bo
 
   return row;
 }
+
+export async function deleteLiveEventComment(id: string) {
+  if (!id) return false;
+
+  const db = getD1Database();
+  const result = await db.prepare("delete from live_event_comments where id = ?").bind(id).run();
+  assertD1Result(result, "Failed to delete live event comment");
+
+  return true;
+}
+
+export async function deleteOrderComment(id: string) {
+  if (!id) return false;
+
+  const db = getD1Database();
+  const result = await db.prepare("delete from order_comments where id = ?").bind(id).run();
+  assertD1Result(result, "Failed to delete order comment");
+
+  return true;
+}

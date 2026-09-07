@@ -19,6 +19,7 @@ type OrderRow = {
 };
 
 type OrderSummaryRow = OrderRow & {
+  has_pa_request: number;
   song_count: number;
 };
 
@@ -122,8 +123,10 @@ function summaryFromRow(order: OrderSummaryRow): OrderSummary {
     contactName: order.contact_name,
     songCount: order.song_count,
     usesBackingTrack: Boolean(order.uses_backing_track),
+    hasPaRequest: Boolean(order.has_pa_request),
     status: order.status,
     createdAt: order.created_at,
+    updatedAt: order.updated_at,
   };
 }
 
@@ -271,7 +274,7 @@ export async function listOrderSummaries(): Promise<OrderSummary[]> {
   const db = getD1Database();
   const result = await db
     .prepare(
-      "select orders.*, (select count(*) from songs where songs.order_id = orders.id) as song_count from orders order by created_at desc",
+      "select orders.*, (select count(*) from songs where songs.order_id = orders.id) as song_count, (case when coalesce(orders.general_request, '') != '' or exists(select 1 from songs where songs.order_id = orders.id and coalesce(songs.pa_request, '') != '') then 1 else 0 end) as has_pa_request from orders order by created_at desc",
     )
     .all<OrderSummaryRow>();
   assertD1Result(result, "Failed to fetch order summaries");
@@ -398,7 +401,7 @@ async function getOrderedRowsByLiveEvent(liveEventId: string) {
   const db = getD1Database();
   const result = await db
     .prepare(
-      "select orders.*, (select count(*) from songs where songs.order_id = orders.id) as song_count from orders where live_event_id = ? order by coalesce(performance_order, 999999), created_at asc",
+      "select orders.*, (select count(*) from songs where songs.order_id = orders.id) as song_count, (case when coalesce(orders.general_request, '') != '' or exists(select 1 from songs where songs.order_id = orders.id and coalesce(songs.pa_request, '') != '') then 1 else 0 end) as has_pa_request from orders where live_event_id = ? order by coalesce(performance_order, 999999), created_at asc",
     )
     .bind(liveEventId)
     .all<OrderSummaryRow>();
@@ -428,8 +431,6 @@ async function normalizePerformanceOrders(liveEventId: string) {
 
 export async function listOrdersByLiveEvent(liveEventId: string) {
   if (!liveEventId) return [];
-
-  await normalizePerformanceOrders(liveEventId);
 
   const rows = await getOrderedRowsByLiveEvent(liveEventId);
   const related = await getRelatedRows(rows.map((order) => order.id));

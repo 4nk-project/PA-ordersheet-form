@@ -10,10 +10,15 @@
     "dev": "next dev",
     "start": "next start",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "node --test",
+    "test": "vitest run",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "preview:circle2": "opennextjs-cloudflare build --config wrangler.circle2.jsonc && opennextjs-cloudflare preview --config wrangler.circle2.jsonc",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:circle2": "opennextjs-cloudflare build --config wrangler.circle2.jsonc && opennextjs-cloudflare deploy --config wrangler.circle2.jsonc",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "migrate:circle2:local": "wrangler d1 migrations apply DB --config wrangler.circle2.jsonc --local",
+    "migrate:circle2:remote": "wrangler d1 migrations apply DB --config wrangler.circle2.jsonc --remote",
+    "secret:circle2": "wrangler secret put ADMIN_PASSWORD --config wrangler.circle2.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
@@ -21,13 +26,19 @@
     "@supabase/supabase-js": "^2.106.1",
     "next": "^15.3.0",
     "react": "^19.0.0",
+    "react-aria-components": "^1.21.1",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^22.15.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "jsdom": "^30.0.1",
     "typescript": "5.9.3",
+    "vitest": "^3.2.4",
     "wrangler": "^4.93.1"
   }
 }

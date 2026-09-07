@@ -3,8 +3,7 @@ import { OrderForm } from "./order-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const params = await searchParams;
+export default async function Home() {
   const liveEvents = await listLiveEvents();
 
   return (
@@ -16,7 +15,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
         </div>
       </header>
 
-      <OrderForm error={params.error} liveEvents={liveEvents} />
+      <OrderForm liveEvents={liveEvents} />
     </main>
   );
 }

@@ -31,3 +31,24 @@ ADMIN_PASSWORD="your-strong-password"
 npx wrangler d1 migrations apply pa-ordersheet-form --local
 npx wrangler d1 migrations apply pa-ordersheet-form --remote
 ```
+
+## 別サークル用MVP
+
+同じコードから、データと管理者ログインを分離した別サークル用Workerを配備できます。
+
+| 環境 | Worker | D1設定 |
+| --- | --- | --- |
+| 現行サークル | `pa-ordersheet-form` | `wrangler.jsonc` |
+| 別サークル | `pa-ordersheet-form-circle2` | `wrangler.circle2.jsonc` |
+
+別サークル用MVP: <https://pa-ordersheet-form-circle2.ankoromoti.workers.dev>
+
+別サークル用の初回セットアップと更新は次のコマンドを使います。
+
+```bash
+npm run migrate:circle2:remote
+npm run secret:circle2
+npm run deploy:circle2
+```
+
+詳しい運用手順は [`docs/second-circle-mvp.md`](docs/second-circle-mvp.md) を参照してください。

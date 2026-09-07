@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listOrders } from "@/lib/orders";
 import { statusLabels } from "@/lib/format";
+import { isAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ function csv(value: string | number | boolean) {
 }
 
 export async function GET() {
+  if (!(await isAdminSession())) return new NextResponse("Unauthorized", { status: 401 });
   const orders = await listOrders();
   const rows = [
     [
