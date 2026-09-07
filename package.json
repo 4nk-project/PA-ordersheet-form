@@ -12,8 +12,13 @@
     "typecheck": "tsc --noEmit --incremental false",
     "test": "node --test",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "preview:circle2": "opennextjs-cloudflare build --config wrangler.circle2.jsonc && opennextjs-cloudflare preview --config wrangler.circle2.jsonc",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:circle2": "opennextjs-cloudflare build --config wrangler.circle2.jsonc && opennextjs-cloudflare deploy --config wrangler.circle2.jsonc",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "migrate:circle2:local": "wrangler d1 migrations apply DB --config wrangler.circle2.jsonc --local",
+    "migrate:circle2:remote": "wrangler d1 migrations apply DB --config wrangler.circle2.jsonc --remote",
+    "secret:circle2": "wrangler secret put ADMIN_PASSWORD --config wrangler.circle2.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
