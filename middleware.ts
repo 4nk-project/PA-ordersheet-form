@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { adminCookieName } from "@/lib/auth";
+import { adminCookieName, verifyAdminSessionValue } from "@/lib/admin-session";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
   const isLoginPath = request.nextUrl.pathname === "/admin/login";
 
@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (request.cookies.get(adminCookieName)?.value === "1") {
+  if (await verifyAdminSessionValue(request.cookies.get(adminCookieName)?.value)) {
     return NextResponse.next();
   }
 

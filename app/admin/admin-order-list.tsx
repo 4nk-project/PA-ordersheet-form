@@ -45,6 +45,7 @@ export function AdminOrderList({
       ) : (
         <>
           <div className="filter-bar">
+            <button className="button secondary" type="button" onClick={() => setStatus("new")}>未確認だけ表示</button>
             <label className="field">
               <span>検索</span>
               <input
@@ -98,9 +99,9 @@ export function AdminOrderList({
                     <th>バンド名</th>
                     <th>代表者</th>
                     <th>曲数</th>
-                    <th>音源</th>
+                    <th>注意事項</th>
                     <th>ステータス</th>
-                    <th>提出日時</th>
+                    <th>最終更新</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -115,13 +116,13 @@ export function AdminOrderList({
                       <td>
                         {order.songCount} / {order.liveEventSongCount || order.songCount}曲
                       </td>
-                      <td>{order.usesBackingTrack ? <span className="badge warn">あり</span> : "なし"}</td>
+                      <td><div className="live-order-badges">{order.usesBackingTrack ? <span className="badge warn">音源あり</span> : null}{order.hasPaRequest ? <span className="badge warn">PA要望あり</span> : null}{!order.usesBackingTrack && !order.hasPaRequest ? "なし" : null}</div></td>
                       <td>
                         <span className={`badge ${order.status === "new" ? "warn" : order.status === "done" ? "done" : ""}`}>
                           {statusLabels[order.status]}
                         </span>
                       </td>
-                      <td>{formatDateTime(order.createdAt)}</td>
+                      <td>{formatDateTime(order.updatedAt)}</td>
                       <td>
                         <a className="button secondary" href={`/admin/orders/${order.id}`}>
                           詳細

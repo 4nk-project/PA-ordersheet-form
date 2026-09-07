@@ -3,8 +3,10 @@ import { listLiveEventComments, listOrderComments } from "@/lib/comments";
 import { formatDateTime, statusLabels } from "@/lib/format";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { listOrdersByLiveEvent } from "@/lib/orders";
+import { requireAdminSession } from "@/lib/auth";
 import type { AdminComment } from "@/types/order";
 import { logout } from "../login/actions";
+import { ConfirmSubmitButton } from "@/components/ui/ConfirmSubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ export default async function LiveOrdersPage({
 }: {
   searchParams: Promise<{ live_event_id?: string }>;
 }) {
+  await requireAdminSession();
   const [params, liveEvents] = await Promise.all([searchParams, listLiveEvents()]);
   const selectedLiveEvent = liveEvents.find((event) => event.id === params.live_event_id) || liveEvents[0];
   const orders = selectedLiveEvent ? await listOrdersByLiveEvent(selectedLiveEvent.id) : [];
@@ -41,6 +44,7 @@ export default async function LiveOrdersPage({
           <a className="button secondary" href="/admin/live-orders">
             演奏順管理
           </a>
+          <a className="button secondary" href="/admin/settings/live-events">ライブ設定</a>
           <form action={logout}>
             <button className="button secondary" type="submit">
               ログアウト
@@ -104,11 +108,11 @@ export default async function LiveOrdersPage({
               <input name="live_event_id" type="hidden" value={selectedLiveEvent.id} />
               <label className="field">
                 <span>名前</span>
-                <input className="input" name="author_name" required />
+                <input className="input" maxLength={80} name="author_name" required />
               </label>
               <label className="field">
                 <span>本文</span>
-                <textarea className="textarea" name="body" required />
+                <textarea className="textarea" maxLength={2000} name="body" required />
               </label>
               <button className="button" type="submit">
                 投稿
@@ -181,11 +185,11 @@ export default async function LiveOrdersPage({
                         <input name="order_id" type="hidden" value={order.id} />
                         <label className="field">
                           <span>名前</span>
-                          <input className="input" name="author_name" required />
+                          <input className="input" maxLength={80} name="author_name" required />
                         </label>
                         <label className="field">
                           <span>本文</span>
-                          <textarea className="textarea" name="body" required />
+                          <textarea className="textarea" maxLength={2000} name="body" required />
                         </label>
                         <button className="button" type="submit">
                           投稿
@@ -258,9 +262,7 @@ function CommentList({
             <form action={deleteAction}>
               <input name="comment_id" type="hidden" value={comment.id} />
               <input name="return_path" type="hidden" value={returnPath} />
-              <button className="button secondary small-button" type="submit">
-                削除
-              </button>
+              <ConfirmSubmitButton title="コメントを削除しますか？" description="このコメントを削除します。操作は取り消せません。" />
             </form>
           </div>
           <p className="preline">{comment.body}</p>

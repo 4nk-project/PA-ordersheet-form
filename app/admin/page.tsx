@@ -1,4 +1,4 @@
-import { addLiveEvent, changeLiveEventSongCount, removeLiveEvent } from "@/app/actions";
+import { requireAdminSession } from "@/lib/auth";
 import { listLiveEvents } from "@/lib/liveEvents";
 import { listOrderSummaries } from "@/lib/orders";
 import { logout } from "./login/actions";
@@ -7,6 +7,7 @@ import { AdminOrderList } from "./admin-order-list";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  await requireAdminSession();
   const liveEvents = await listLiveEvents();
   const orders = await listOrderSummaries();
   const newCount = orders.filter((order) => order.status === "new").length;
@@ -29,6 +30,7 @@ export default async function AdminPage() {
           <a className="button secondary" href="/admin/live-orders">
             演奏順管理
           </a>
+          <a className="button secondary" href="/admin/settings/live-events">ライブ設定</a>
           <form action={logout}>
             <button className="button secondary" type="submit">
               ログアウト
@@ -67,61 +69,14 @@ export default async function AdminPage() {
         </div>
 
         <section className="section">
-          <div className="section-title">
-            <div>
-              <h2>ライブ内容</h2>
-              <p>回答フォームに表示するライブ選択肢を管理できます。</p>
-            </div>
-          </div>
-          <div className="admin-live-grid">
-            <form className="panel live-event-form" action={addLiveEvent}>
-              <label className="field">
-                <span>追加するライブ名</span>
-                <input className="input" name="name" placeholder="例: 2026 春ライブ" required />
-              </label>
-              <label className="field">
-                <span>曲数</span>
-                <input className="input" defaultValue={8} min="1" name="song_count" required type="number" />
-              </label>
-              <button className="button" type="submit">
-                追加
-              </button>
-            </form>
-            <div className="table-wrap">
-              <table className="table compact-table">
-                <thead>
-                  <tr>
-                    <th>ライブ名</th>
-                    <th>曲数</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {liveEvents.map((event) => (
-                    <tr key={event.id}>
-                      <td>{event.name}</td>
-                      <td>
-                        <form className="inline-form" action={changeLiveEventSongCount}>
-                          <input name="id" type="hidden" value={event.id} />
-                          <input className="input compact-input" defaultValue={event.songCount} min="1" name="song_count" type="number" />
-                          <button className="button secondary" type="submit">
-                            更新
-                          </button>
-                        </form>
-                      </td>
-                      <td>
-                        <form action={removeLiveEvent}>
-                          <input name="id" type="hidden" value={event.id} />
-                          <button className="button danger" disabled={liveEvents.length <= 1} type="submit">
-                            削除
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="section-title"><div><h2>ライブ別の確認状況</h2><p>提出数と確認完了数をライブごとに確認できます。</p></div></div>
+          <div className="event-progress-list">
+            {liveEvents.map((event) => {
+              const eventOrders = orders.filter((order) => order.liveEventId === event.id);
+              const done = eventOrders.filter((order) => order.status === "done").length;
+              const percent = eventOrders.length ? Math.round((done / eventOrders.length) * 100) : 0;
+              return <div className="event-progress" key={event.id}><div><strong>{event.name}</strong><span>{done} / {eventOrders.length}件 確認完了</span></div><div className="event-progress-track" aria-label={`${event.name} ${percent}%`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}><span style={{ width: `${percent}%` }} /></div></div>;
+            })}
           </div>
         </section>
 

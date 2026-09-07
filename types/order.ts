@@ -71,6 +71,8 @@ export type OrderSummary = {
   contactName: string;
   songCount: number;
   usesBackingTrack: boolean;
+  hasPaRequest: boolean;
   status: OrderStatus;
   createdAt: string;
+  updatedAt: string;
 };

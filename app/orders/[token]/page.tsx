@@ -10,9 +10,10 @@ export default async function EditOrderPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ error?: string; updated?: string }>;
+  searchParams: Promise<{ updated?: string }>;
 }) {
-  const [{ token }, query] = await Promise.all([params, searchParams]);
+  const { token } = await params;
+  const query = await searchParams;
   const [order, liveEvents] = await Promise.all([getOrderByEditToken(token), listLiveEvents()]);
 
   if (!order) {
@@ -27,7 +28,7 @@ export default async function EditOrderPage({
           <span>確認・編集</span>
         </div>
       </header>
-      <OrderForm error={query.error} liveEvents={liveEvents} mode="submitter" order={order} updated={query.updated === "1"} />
+      <OrderForm liveEvents={liveEvents} mode="submitter" order={order} updated={query.updated === "1"} />
     </main>
   );
 }
