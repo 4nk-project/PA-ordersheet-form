@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "entries": [
+      {
+        "eventId": "live_example",
+        "entryId": "ent_aoshingou",
+        "revision": 1,
+        "bandName": "青信号",
+        "initialPerformanceOrder": 1,
+        "cancelled": false,
+        "invite": { "inviteId": "inv_01", "expiresAt": "2026-11-30T14:59:00.000Z", "revokedAt": null },
+        "order": {
+          "orderId": "ord_aoshingou",
+          "contentRevision": 2,
+          "reviewedRevision": 2,
+          "reviewStatus": "done",
+          "submitterUpdatedAt": "2026-11-20T10:00:00.000Z",
+          "adminUpdatedAt": null
+        },
+        "importReceipts": [
+          { "runtimeId": "runtime_main", "importedRevision": 2, "importedAt": "2026-11-21T09:00:00.000Z", "receivedAt": "2026-11-21T09:00:01.000Z" }
+        ]
+      },
+      {
+        "eventId": "live_example",
+        "entryId": "ent_houkago",
+        "revision": 1,
+        "bandName": "放課後セッション",
+        "initialPerformanceOrder": 2,
+        "cancelled": false,
+        "invite": { "inviteId": "inv_02", "expiresAt": "2026-11-30T14:59:00.000Z", "revokedAt": null },
+        "order": null,
+        "importReceipts": []
+      }
+    ]
+  }
+}

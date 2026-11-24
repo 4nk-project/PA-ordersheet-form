@@ -1,0 +1,9 @@
+# ローカル開発用（wrangler / next dev）。実値は .dev.vars または .env.local に置き、Gitへ入れない。
+ADMIN_PASSWORD="change-me"
+ADMIN_SESSION_SECRET="change-me-to-a-long-random-string"
+# 招待URLの先頭に付ける公開URL（未設定ならリクエストのオリジン）
+PA_PUBLIC_BASE_URL="http://localhost:3000"
+# NodeCG 連携用トークン（SHA-256 のみ）。npm run token:create で生成する
+INTEGRATION_TOKENS='[{"id":"nodecg-main","sha256":"0000000000000000000000000000000000000000000000000000000000000000","scopes":["read","manage","importReceipt"],"eventIds":["*"]}]'
+# 招待発行APIの再送記録を暗号化する鍵（32バイトを base64）。例: openssl rand -base64 32
+INVITE_REPLAY_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="

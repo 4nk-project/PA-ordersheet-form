@@ -1,12 +1,24 @@
 import { requireAdminSession } from "@/lib/auth";
 import { listLiveEvents } from "@/lib/liveEvents";
-import { logout } from "../../login/actions";
+import { isoToZonedLocal } from "@/lib/time";
+import { AdminHeader } from "../../admin-header";
 import { LiveEventSettings } from "./live-event-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function LiveEventSettingsPage() {
   await requireAdminSession();
-  const liveEvents = await listLiveEvents();
-  return <main className="shell"><header className="topbar"><a className="brand" href="/admin"><strong>PAオーダーシート</strong><span>ライブ設定</span></a><div className="actions"><a className="button secondary" href="/admin">提出一覧</a><a className="button secondary" href="/admin/live-orders">演奏順管理</a><form action={logout}><button className="button secondary" type="submit">ログアウト</button></form></div></header><section className="container"><div className="hero"><h1>ライブ設定</h1><p>提出フォームに表示するライブ名と最大曲数を管理します。</p></div><LiveEventSettings liveEvents={liveEvents} /></section></main>;
+  const liveEvents = (await listLiveEvents()).map((event) => ({ ...event, deadlineLocal: isoToZonedLocal(event.submissionDeadlineAt, event.timeZone) }));
+  return (
+    <main className="shell">
+      <AdminHeader title="ライブ設定" />
+      <section className="container">
+        <div className="hero">
+          <h1>ライブ設定</h1>
+          <p>ライブ名、開催日、提出締切、受付状態、招待制の有無、最大曲数を管理します。</p>
+        </div>
+        <LiveEventSettings liveEvents={liveEvents} />
+      </section>
+    </main>
+  );
 }

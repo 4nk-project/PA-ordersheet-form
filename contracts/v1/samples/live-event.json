@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "event": {
+      "eventId": "live_example",
+      "revision": 3,
+      "name": "冬の軽音ライブ",
+      "eventDate": "2026-12-01",
+      "timeZone": "Asia/Tokyo",
+      "submissionDeadlineAt": "2026-11-28T14:59:00.000Z",
+      "submissionsOpen": true,
+      "inviteRequired": true,
+      "songLimit": 6
+    }
+  }
+}
