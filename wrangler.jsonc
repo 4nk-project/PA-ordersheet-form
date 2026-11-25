@@ -7,6 +7,11 @@
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
+	// 本番の URL（pa-ordersheet-form.<subdomain>.workers.dev）。演者フォームと NodeCG の PA_API_BASE_URL が使うので有効のまま固定する
+	"workers_dev": true,
+	// バージョンごとのプレビュー URL は使わない。プレビュー版も本番の D1 につながるため、未マージのコードを公開しない。
+	// 書かないと wrangler は既存の設定（有効）を変えないので、明示して無効にする
+	"preview_urls": false,
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
