@@ -60,8 +60,25 @@ npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/counts.s
 npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/verify-0004.sql
 ```
 
-3. 件数が移行前と一致し、検証がすべて 0 なら、アプリをデプロイする。
+3. 件数が移行前と一致し、検証がすべて 0 なら、アプリをデプロイする。デプロイ完了後に補完 SQL（下記）を実行する。
 4. 管理画面で既存の提出が表示され、既存の編集URLが開けることを確認する。
+
+### 移行からデプロイまでの間の注意
+
+0004 は列と表を追加するだけなので、移行後も旧バージョンのアプリはほぼそのまま動きます（旧コードの一覧・詳細・編集URL・新規提出・更新・状態変更・並べ替え・コメント・削除を、0004 適用後の D1 で確認済み）。ただし次の点があります。
+
+- 旧フォームから受け付けた提出には、出演エントリー・版1の履歴・演奏時間の秒数が作られない。デプロイ後に補完 SQL を実行する。
+
+  ```bash
+  npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/backfill-after-0004.sql
+  npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/verify-0004.sql   # すべて 0
+  ```
+
+  補完 SQL は何度実行しても同じ結果になり、移行済みの提出は変更しない。
+- 移行前からある提出を旧画面で編集しても、版1の履歴は移行時点の内容のまま残る（現在の内容は正しく保存される）。気になる場合は新しい管理画面で確認し直す。
+- 移行前からある提出の所属ライブを旧管理画面で別のライブに変えると、エラーで保存されない（0004 の整合チェック）。
+
+この期間はできるだけ短くし、移行の直後に新しいアプリをデプロイしてください。
 
 ## 5. 戻し方
 
