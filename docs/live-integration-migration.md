@@ -2,14 +2,13 @@
 
 `migrations/0004_entries_invites_revisions.sql`（出演エントリー・招待・版履歴・NodeCG連携）を本番 D1 に適用し、NodeCG と接続するための手順です。**本番への適用は運営の判断で行い、この手順書自体は本番を変更しません。**
 
-対象の D1 が「現行」か「別サークル用」かを最初に決め、以下のコマンドの `-c` を合わせてください。コマンドの `DB` は D1 のバインディング名で、設定ファイルから実際のデータベースが決まります。
+コマンドの `DB` は D1 のバインディング名で、`-c wrangler.jsonc` の設定ファイルから実際のデータベースが決まります。
 
 本番（`--remote`）で `--file` を使うと取り込み用の実行になり、SELECT の結果が表示されません。件数・検証の SQL は `--command` で渡します（書き込み用の補完 SQL は `--file` で構いません）。
 
 | 対象 | `-c` | データベース名 |
 | --- | --- | --- |
 | 現行 | `wrangler.jsonc` | `pa-ordersheet-form` |
-| 別サークル用 | `wrangler.circle2.jsonc` | `pa-ordersheet-form-circle2` |
 
 `0004_entries_invites_revisions.sql` を含むブランチ（`feature/live-integration`）をチェックアウトした状態で実行します。
 
@@ -18,7 +17,6 @@
 | 対象 | 実施日 | 結果 |
 | --- | --- | --- |
 | 現行（`pa-ordersheet-form`） | 2026-11-25 | 適用済み。移行前後とも live_events 1 / orders 0。検証すべて 0。直前の Time Travel bookmark `0000037e-00000000-0000512e-368cc800aa15c764345fcc7d5efccc29`。アプリは旧バージョンのまま（ビルド停止中のため） |
-| 別サークル用（`pa-ordersheet-form-circle2`） | — | 未適用 |
 
 ## 1. 移行規則（0004 の内容）
 
