@@ -4,12 +4,21 @@
 
 対象の D1 が「現行」か「別サークル用」かを最初に決め、以下のコマンドの `-c` を合わせてください。コマンドの `DB` は D1 のバインディング名で、設定ファイルから実際のデータベースが決まります。
 
+本番（`--remote`）で `--file` を使うと取り込み用の実行になり、SELECT の結果が表示されません。件数・検証の SQL は `--command` で渡します（書き込み用の補完 SQL は `--file` で構いません）。
+
 | 対象 | `-c` | データベース名 |
 | --- | --- | --- |
 | 現行 | `wrangler.jsonc` | `pa-ordersheet-form` |
 | 別サークル用 | `wrangler.circle2.jsonc` | `pa-ordersheet-form-circle2` |
 
 `0004_entries_invites_revisions.sql` を含むブランチ（`feature/live-integration`）をチェックアウトした状態で実行します。
+
+## 実施記録
+
+| 対象 | 実施日 | 結果 |
+| --- | --- | --- |
+| 現行（`pa-ordersheet-form`） | 2026-11-25 | 適用済み。移行前後とも live_events 1 / orders 0。検証すべて 0。直前の Time Travel bookmark `0000037e-00000000-0000512e-368cc800aa15c764345fcc7d5efccc29`。アプリは旧バージョンのまま（ビルド停止中のため） |
+| 別サークル用（`pa-ordersheet-form-circle2`） | — | 未適用 |
 
 ## 1. 移行規則（0004 の内容）
 
@@ -25,7 +34,7 @@
 mkdir -p backup
 npx wrangler d1 export DB --remote -c wrangler.jsonc --output "backup/before-0004-$(date +%Y%m%d-%H%M).sql"
 npx wrangler d1 time-travel info DB -c wrangler.jsonc   # 表示されたブックマークと時刻を控える
-npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/counts.sql   # 移行前の件数を控える
+npx wrangler d1 execute DB --remote -c wrangler.jsonc --command "$(grep -v '^--' scripts/d1/counts.sql)"   # 移行前の件数を控える
 ```
 
 `backup/` の SQL には個人情報（代表者・メンバー名・編集トークン）が含まれます。Git に入れず、共有しないでください。
@@ -56,8 +65,8 @@ npm run dev   # 既存の編集URL（/orders/<トークン>）と管理画面が
 ```bash
 npx wrangler d1 migrations list DB --remote -c wrangler.jsonc    # 0004 だけが未適用であること
 npx wrangler d1 migrations apply DB --remote -c wrangler.jsonc
-npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/counts.sql
-npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/verify-0004.sql
+npx wrangler d1 execute DB --remote -c wrangler.jsonc --command "$(grep -v '^--' scripts/d1/counts.sql)"
+npx wrangler d1 execute DB --remote -c wrangler.jsonc --command "$(grep -v '^--' scripts/d1/verify-0004.sql)"
 ```
 
 3. 件数が移行前と一致し、検証がすべて 0 なら、アプリをデプロイする。デプロイ完了後に補完 SQL（下記）を実行する。
@@ -71,7 +80,7 @@ npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/verify-0
 
   ```bash
   npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/backfill-after-0004.sql
-  npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/verify-0004.sql   # すべて 0
+  npx wrangler d1 execute DB --remote -c wrangler.jsonc --command "$(grep -v '^--' scripts/d1/verify-0004.sql)"   # すべて 0
   ```
 
   補完 SQL は何度実行しても同じ結果になり、移行済みの提出は変更しない。
