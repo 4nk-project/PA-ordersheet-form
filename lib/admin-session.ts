@@ -1,9 +1,12 @@
+import { getRuntimeEnv } from "@/lib/d1/server";
+
 export const ADMIN_SESSION_SECONDS = 60 * 60 * 8;
 export const adminCookieName = "pa_admin_session";
 const encoder = new TextEncoder();
 
+/** 署名鍵。ログイン（Server Action）と検証（middleware）で同じ値になるよう、同じ読み方で取得する */
 function getSessionSecret() {
-  const secret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD;
+  const secret = getRuntimeEnv("ADMIN_SESSION_SECRET") || getRuntimeEnv("ADMIN_PASSWORD");
   if (!secret && process.env.NODE_ENV === "production") throw new Error("ADMIN_SESSION_SECRET must be configured in production.");
   return secret || "pa-order-sheet-local-session-secret";
 }
