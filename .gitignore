@@ -17,3 +17,6 @@ tsconfig.tsbuildinfo
 
 # D1 のバックアップ（個人情報を含む）
 /backup/
+
+# macOS のフォルダ表示設定
+.DS_Store
