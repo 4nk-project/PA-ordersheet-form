@@ -2,7 +2,14 @@
 
 `migrations/0004_entries_invites_revisions.sql`（出演エントリー・招待・版履歴・NodeCG連携）を本番 D1 に適用し、NodeCG と接続するための手順です。**本番への適用は運営の判断で行い、この手順書自体は本番を変更しません。**
 
-対象の D1 が「現行」か「別サークル用（`wrangler.circle2.jsonc`）」かを最初に決め、以下のコマンドの `-c` を合わせてください（別サークル用は `-c wrangler.circle2.jsonc`）。
+対象の D1 が「現行」か「別サークル用」かを最初に決め、以下のコマンドの `-c` を合わせてください。コマンドの `DB` は D1 のバインディング名で、設定ファイルから実際のデータベースが決まります。
+
+| 対象 | `-c` | データベース名 |
+| --- | --- | --- |
+| 現行 | `wrangler.jsonc` | `pa-ordersheet-form` |
+| 別サークル用 | `wrangler.circle2.jsonc` | `pa-ordersheet-form-circle2` |
+
+`0004_entries_invites_revisions.sql` を含むブランチ（`feature/live-integration`）をチェックアウトした状態で実行します。
 
 ## 1. 移行規則（0004 の内容）
 
@@ -16,9 +23,9 @@
 
 ```bash
 mkdir -p backup
-npx wrangler d1 export pa-ordersheet-form --remote --output "backup/before-0004-$(date +%Y%m%d-%H%M).sql"
-npx wrangler d1 time-travel info pa-ordersheet-form   # 表示されたブックマークと時刻を控える
-npx wrangler d1 execute pa-ordersheet-form --remote --file scripts/d1/counts.sql   # 移行前の件数を控える
+npx wrangler d1 export DB --remote -c wrangler.jsonc --output "backup/before-0004-$(date +%Y%m%d-%H%M).sql"
+npx wrangler d1 time-travel info DB -c wrangler.jsonc   # 表示されたブックマークと時刻を控える
+npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/counts.sql   # 移行前の件数を控える
 ```
 
 `backup/` の SQL には個人情報（代表者・メンバー名・編集トークン）が含まれます。Git に入れず、共有しないでください。
@@ -44,12 +51,13 @@ npm run dev   # 既存の編集URL（/orders/<トークン>）と管理画面が
 ## 4. 本番への適用
 
 1. 提出の締切直前・当日など、提出が集中する時間帯を避ける。
-2. 新しいコードをデプロイする**前に** migration を適用する（新しいコードは 0004 の列を前提にする）。
+2. 新しいコードをデプロイする**前に** migration を適用する（新しいコードは 0004 の列を前提にする）。Workers Builds で `main` へのマージが本番デプロイになっている場合は、**migration を適用してから PR をマージ**する。
 
 ```bash
-npx wrangler d1 migrations apply pa-ordersheet-form --remote
-npx wrangler d1 execute pa-ordersheet-form --remote --file scripts/d1/counts.sql
-npx wrangler d1 execute pa-ordersheet-form --remote --file scripts/d1/verify-0004.sql
+npx wrangler d1 migrations list DB --remote -c wrangler.jsonc    # 0004 だけが未適用であること
+npx wrangler d1 migrations apply DB --remote -c wrangler.jsonc
+npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/counts.sql
+npx wrangler d1 execute DB --remote -c wrangler.jsonc --file scripts/d1/verify-0004.sql
 ```
 
 3. 件数が移行前と一致し、検証がすべて 0 なら、アプリをデプロイする。
@@ -60,7 +68,7 @@ npx wrangler d1 execute pa-ordersheet-form --remote --file scripts/d1/verify-000
 - **migration の適用中・直後に問題が出た場合**：Time Travel で適用前に戻す。
 
   ```bash
-  npx wrangler d1 time-travel restore pa-ordersheet-form --bookmark <手順2で控えたブックマーク>
+  npx wrangler d1 time-travel restore DB -c wrangler.jsonc --bookmark <手順2で控えたブックマーク>
   ```
 
   戻した後は、旧バージョンのアプリをデプロイしたままにする（新しいコードは 0004 の列がないと動かない）。
