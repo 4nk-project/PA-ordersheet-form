@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "eventId": "live_example",
+  "runtimeId": "runtime_main",
+  "revision": 42,
+  "stateUpdatedAt": "2026-12-01T05:10:00.000Z",
+  "eventName": "冬の軽音ライブ",
+  "timeZone": "Asia/Tokyo",
+  "phase": "playing",
+  "currentSlotId": "slot_1",
+  "nextSlotId": "slot_2",
+  "progressDelaySeconds": 420,
+  "progressDelayBasis": "nextEstimatedStart",
+  "youtubeVideoId": null,
+  "publicMessage": "",
+  "slots": [
+    {
+      "slotId": "slot_1",
+      "kind": "performance",
+      "bandName": "青信号",
+      "label": "青信号",
+      "plannedStartAt": "2026-12-01T05:00:00.000Z",
+      "plannedEndAt": "2026-12-01T05:20:00.000Z",
+      "actualStartAt": "2026-12-01T05:07:00.000Z",
+      "actualEndAt": null,
+      "estimatedStartAt": "2026-12-01T05:07:00.000Z",
+      "estimatedEndAt": "2026-12-01T05:27:00.000Z",
+      "startDelaySeconds": 420,
+      "state": "playing"
+    },
+    {
+      "slotId": "slot_2",
+      "kind": "performance",
+      "bandName": "放課後セッション",
+      "label": "放課後セッション",
+      "plannedStartAt": "2026-12-01T05:30:00.000Z",
+      "plannedEndAt": "2026-12-01T05:50:00.000Z",
+      "actualStartAt": null,
+      "actualEndAt": null,
+      "estimatedStartAt": "2026-12-01T05:37:00.000Z",
+      "estimatedEndAt": "2026-12-01T05:57:00.000Z",
+      "startDelaySeconds": null,
+      "state": "pending"
+    }
+  ]
+}

@@ -32,6 +32,12 @@ npx wrangler d1 migrations apply pa-ordersheet-form --local
 npx wrangler d1 migrations apply pa-ordersheet-form --remote
 ```
 
+`0004_entries_invites_revisions.sql`（出演エントリー・招待・版履歴・NodeCG連携）を本番へ適用する前に、バックアップ・リハーサル・検証・戻し方を [docs/live-integration-migration.md](docs/live-integration-migration.md) で確認してください。
+
+## NodeCG 連携
+
+当日進行の NodeCG バンドル（`band-management-nodecg`）は `/api/integration/v1` から確認済みの提出版を取り込みます。トークンの作成と接続手順は [docs/live-integration-migration.md](docs/live-integration-migration.md#6-nodecg-との接続)、API 契約は [contracts/v1/README.md](contracts/v1/README.md) を参照してください。
+
 ## 別サークル用MVP
 
 同じコードから、データと管理者ログインを分離した別サークル用Workerを配備できます。

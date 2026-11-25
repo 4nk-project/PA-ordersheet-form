@@ -1,53 +1,33 @@
 import { notFound } from "next/navigation";
 import { OrderForm } from "@/app/order-form";
-import { logout } from "@/app/admin/login/actions";
-import { listLiveEvents } from "@/lib/liveEvents";
-import { getOrder } from "@/lib/orders";
 import { requireAdminSession } from "@/lib/auth";
+import { getEntry } from "@/lib/entries";
+import { getLiveEvent } from "@/lib/liveEvents";
+import { getOrder } from "@/lib/orders";
+import { AdminHeader } from "../../../admin-header";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminEditOrderPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function AdminEditOrderPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminSession();
   const { id } = await params;
-  const [order, liveEvents] = await Promise.all([getOrder(id), listLiveEvents()]);
-
-  if (!order) {
-    notFound();
-  }
+  const order = await getOrder(id);
+  if (!order) notFound();
+  const [liveEvent, entry] = await Promise.all([getLiveEvent(order.liveEventId), order.entryId ? getEntry(order.entryId) : null]);
+  const back = entry ? `/admin/entries/${encodeURIComponent(entry.id)}` : `/admin/orders/${encodeURIComponent(order.id)}`;
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <a className="brand" href="/admin">
-          <strong>PAオーダーシート</strong>
-          <span>管理者編集</span>
-        </a>
-        <div className="actions">
-          <a className="button secondary" href="/">
-            提出フォーム
+      <AdminHeader title="管理者編集" />
+      <section className="container">
+        <p>
+          <a className="back-link" href={back}>
+            ← 詳細へ戻る
           </a>
-          <a className="button secondary" href="/admin">
-            提出一覧
-          </a>
-          <a className="button secondary" href="/admin/live-orders">
-            演奏順管理
-          </a>
-          <a className="button secondary" href={`/admin/orders/${order.id}`}>
-            詳細へ戻る
-          </a>
-          <form action={logout}>
-            <button className="button secondary" type="submit">
-              ログアウト
-            </button>
-          </form>
-        </div>
-      </header>
-      <OrderForm liveEvents={liveEvents} mode="admin" order={order} />
+        </p>
+        <p className="notice-inline">保存すると提出内容の新しい版（運営による編集）になり、演者の更新日時とは別に記録されます。</p>
+      </section>
+      <OrderForm mode="admin" liveEvent={liveEvent} order={order} entry={entry ? { id: entry.id, bandName: entry.bandName } : null} />
     </main>
   );
 }

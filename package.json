@@ -9,7 +9,7 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
-    "typecheck": "tsc --noEmit --incremental false",
+    "typecheck": "next typegen && tsc --noEmit --incremental false",
     "test": "vitest run",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "preview:circle2": "opennextjs-cloudflare build --config wrangler.circle2.jsonc && opennextjs-cloudflare preview --config wrangler.circle2.jsonc",
@@ -19,15 +19,21 @@
     "migrate:circle2:local": "wrangler d1 migrations apply DB --config wrangler.circle2.jsonc --local",
     "migrate:circle2:remote": "wrangler d1 migrations apply DB --config wrangler.circle2.jsonc --remote",
     "secret:circle2": "wrangler secret put ADMIN_PASSWORD --config wrangler.circle2.jsonc",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "migrate:local": "wrangler d1 migrations apply DB --local",
+    "migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "token:create": "node scripts/create-integration-token.mjs",
+    "contracts:check": "node contracts/v1/tools/check.mjs",
+    "contracts:generate": "tsx contracts/v1/tools/generate.ts"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.19.11",
+    "@opennextjs/cloudflare": "^1.20.18",
     "@supabase/supabase-js": "^2.106.1",
-    "next": "^15.3.0",
+    "next": "^16.4.6",
     "react": "^19.0.0",
     "react-aria-components": "^1.21.1",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
@@ -37,8 +43,9 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "jsdom": "^30.0.1",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "vitest": "^3.2.4",
-    "wrangler": "^4.93.1"
+    "wrangler": "^4.168.0"
   }
 }

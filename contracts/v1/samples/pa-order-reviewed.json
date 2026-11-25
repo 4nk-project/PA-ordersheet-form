@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "eventId": "live_example",
+    "entryId": "ent_aoshingou",
+    "orderId": "ord_aoshingou",
+    "contentRevision": 2,
+    "reviewedRevision": 2,
+    "reviewedAt": "2026-11-21T08:30:00.000Z",
+    "bandName": "青信号",
+    "contactName": "山田 花子",
+    "microphoneCount": 3,
+    "usesBackingTrack": true,
+    "backingTrack": { "operator": "山田", "device": "ノートPC", "connection": "オーディオIF経由でDIへ" },
+    "members": [
+      { "id": "mem_vo01", "name": "山田 花子", "instrument": "Vo" },
+      { "id": "mem_gt01", "name": "佐藤 一郎", "instrument": "Gt" }
+    ],
+    "equipment": [
+      { "id": "eqp_fx01", "name": "エフェクターボード", "instrument": "Gt", "memberId": "mem_gt01" }
+    ],
+    "songs": [
+      {
+        "id": "song_01",
+        "order": 1,
+        "title": "はじまりの歌",
+        "durationSeconds": 270,
+        "mood": "アップテンポ",
+        "startTrigger": "ドラム4カウント",
+        "paRequest": "",
+        "mc": { "hasMc": true, "person": "山田" }
+      },
+      {
+        "id": "song_02",
+        "order": 2,
+        "title": "夕暮れ",
+        "durationSeconds": null,
+        "mood": "バラード",
+        "startTrigger": "ギターから",
+        "paRequest": "ギターソロで少し音量を上げてください。",
+        "mc": { "hasMc": false, "person": "" }
+      }
+    ],
+    "generalRequest": "",
+    "submitterUpdatedAt": "2026-11-20T10:00:00.000Z",
+    "adminUpdatedAt": null
+  }
+}

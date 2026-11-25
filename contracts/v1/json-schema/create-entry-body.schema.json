@@ -1,0 +1,29 @@
+{
+  "$id": "band-live/v1/create-entry-body",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "bandName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "initialPerformanceOrder": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "bandName"
+  ],
+  "additionalProperties": false
+}

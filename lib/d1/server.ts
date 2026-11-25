@@ -1,12 +1,13 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-type D1Result<T = unknown> = {
+export type D1Result<T = unknown> = {
   error?: string;
+  meta?: { changes?: number; last_row_id?: number };
   results?: T[];
   success: boolean;
 };
 
-type D1PreparedStatement = {
+export type D1PreparedStatement = {
   all<T = unknown>(): Promise<D1Result<T>>;
   bind(...values: unknown[]): D1PreparedStatement;
   first<T = unknown>(): Promise<T | null>;
@@ -18,7 +19,17 @@ export type D1DatabaseBinding = {
   prepare(query: string): D1PreparedStatement;
 };
 
+type TestGlobal = typeof globalThis & { __PA_TEST_D1__?: D1DatabaseBinding };
+
+/** テストからローカルD1（wrangler getPlatformProxy）を差し込む */
+export function setTestD1Database(db: D1DatabaseBinding | undefined) {
+  (globalThis as TestGlobal).__PA_TEST_D1__ = db;
+}
+
 export function getD1Database() {
+  const testDb = (globalThis as TestGlobal).__PA_TEST_D1__;
+  if (testDb) return testDb;
+
   const env = getCloudflareContext().env as Record<string, unknown>;
   const db = env.DB;
 
@@ -32,5 +43,18 @@ export function getD1Database() {
 export function assertD1Result(result: D1Result, message: string) {
   if (!result.success) {
     throw new Error(`${message}: ${result.error || "Unknown D1 error"}`);
+  }
+}
+
+/** process.env または Cloudflare の環境変数・シークレットから文字列を読む */
+export function getRuntimeEnv(name: string): string | undefined {
+  const processValue = process.env[name];
+  if (processValue) return processValue;
+  try {
+    const cloudflareEnv = getCloudflareContext().env as Record<string, unknown>;
+    const value = cloudflareEnv[name];
+    return typeof value === "string" ? value : undefined;
+  } catch {
+    return undefined;
   }
 }

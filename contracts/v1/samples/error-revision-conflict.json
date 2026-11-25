@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "error": {
+    "code": "revision_conflict",
+    "message": "確認中に新しい提出が届きました。差分を確認してから再度確認済みにしてください。",
+    "currentRevision": 3
+  }
+}
