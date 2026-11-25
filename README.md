@@ -9,11 +9,27 @@ npm install
 npm run dev
 ```
 
-管理者ログインの初期パスワードは `admin-pa-2026` です。運用時は `.env.local` に設定してください。
+## 管理者パスワード
+
+管理者ログイン（`/admin/login`）のパスワードは `ADMIN_PASSWORD` で設定します。
+
+### ローカル開発
+
+`.dev.vars.example` を `.dev.vars` にコピーし、`ADMIN_PASSWORD` を書き換えます（`.dev.vars` は Git に入れません）。未設定のときは開発専用の `admin-pa-2026-dev-only` でログインできます。
 
 ```bash
-ADMIN_PASSWORD="your-strong-password"
+cp .dev.vars.example .dev.vars
 ```
+
+### 本番（Cloudflare Workers）
+
+Worker の Secret に登録します。パスワードを変えるときも同じコマンドで上書きします。再デプロイは不要です。
+
+```bash
+npx wrangler secret put ADMIN_PASSWORD
+```
+
+本番で `ADMIN_PASSWORD` が未設定だと管理画面はエラーになります。`ADMIN_SESSION_SECRET`（ログイン状態の署名鍵）が未設定の場合は `ADMIN_PASSWORD` が代わりに使われるため、パスワードを変えるとログイン中の管理者は全員ログアウトされます。
 
 ## Pages
 
