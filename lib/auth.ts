@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { adminCookieName, createAdminSessionValue, verifyAdminSessionValue } from "@/lib/admin-session";
+import { getRuntimeEnv } from "@/lib/d1/server";
 
 export { adminCookieName, createAdminSessionValue, verifyAdminSessionValue } from "@/lib/admin-session";
 
+/** 管理者パスワード。本番は Workers の秘密設定、開発時は .dev.vars からも読む */
 export function getAdminPassword() {
-  const password = process.env.ADMIN_PASSWORD;
+  const password = getRuntimeEnv("ADMIN_PASSWORD");
   if (!password && process.env.NODE_ENV === "production") throw new Error("ADMIN_PASSWORD must be configured in production.");
   return password || "admin-pa-2026-dev-only";
 }
